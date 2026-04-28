@@ -9,6 +9,11 @@ export type WeaponState = {
   isReloading: boolean;
 };
 
+export type WeaponSnapshot = Pick<
+  WeaponState,
+  "magazineAmmo" | "reserveAmmo" | "fireCooldownRemaining" | "reloadRemaining" | "isReloading"
+>;
+
 export type FireAttempt =
   | { fired: true }
   | { fired: false; reason: "not-aiming" | "cooldown" | "reloading" | "empty" };
@@ -79,6 +84,41 @@ export function tryFireWeapon(weapon: WeaponState, isAiming: boolean): FireAttem
   weapon.magazineAmmo -= 1;
   weapon.fireCooldownRemaining = weapon.config.fireCooldown;
   return { fired: true };
+}
+
+export function addReserveAmmo(weapon: WeaponState, amount: number) {
+  const before = weapon.reserveAmmo;
+  weapon.reserveAmmo = Math.min(weapon.config.reserveAmmoMax, weapon.reserveAmmo + amount);
+  return weapon.reserveAmmo - before;
+}
+
+export function createWeaponSnapshot(weapon: WeaponState): WeaponSnapshot {
+  return {
+    magazineAmmo: weapon.magazineAmmo,
+    reserveAmmo: weapon.reserveAmmo,
+    fireCooldownRemaining: weapon.fireCooldownRemaining,
+    reloadRemaining: weapon.reloadRemaining,
+    isReloading: weapon.isReloading,
+  };
+}
+
+export function restoreWeaponSnapshot(weapon: WeaponState, snapshot: WeaponSnapshot) {
+  weapon.magazineAmmo = snapshot.magazineAmmo;
+  weapon.reserveAmmo = snapshot.reserveAmmo;
+  weapon.fireCooldownRemaining = snapshot.fireCooldownRemaining;
+  weapon.reloadRemaining = snapshot.reloadRemaining;
+  weapon.isReloading = snapshot.isReloading;
+}
+
+export function ensureMinimumAmmo(weapon: WeaponState, minimumTotalAmmo: number) {
+  const totalAmmo = weapon.magazineAmmo + weapon.reserveAmmo;
+
+  if (totalAmmo >= minimumTotalAmmo) {
+    return false;
+  }
+
+  weapon.reserveAmmo += minimumTotalAmmo - totalAmmo;
+  return true;
 }
 
 export function getAmmoText(weapon: WeaponState) {

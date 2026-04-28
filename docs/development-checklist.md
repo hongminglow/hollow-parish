@@ -369,68 +369,68 @@ Goal: connect exploration, resource management, gates, and objectives.
 
 ### Pickup System
 
-- [ ] Add pickup simulation state.
-- [ ] Add pickup trigger colliders.
-- [ ] Add interact prompt for pickups.
-- [ ] Add pickup collection event.
-- [ ] Prevent duplicate pickup collection.
-- [ ] Add pickup text feedback.
+- [x] Add pickup simulation state.
+- [x] Add pickup trigger colliders.
+- [x] Add interact prompt for pickups.
+- [x] Add pickup collection event.
+- [x] Prevent duplicate pickup collection.
+- [x] Add pickup text feedback.
 - [ ] Add pickup sound placeholder.
 
 ### Inventory
 
-- [ ] Add inventory data model.
-- [ ] Add ammo item handling.
-- [ ] Add healing item handling.
-- [ ] Add key item handling.
-- [ ] Add simple inventory menu.
-- [ ] Add healing action.
-- [ ] Add health cap.
-- [ ] Add item stack counts.
+- [x] Add inventory data model.
+- [x] Add ammo item handling.
+- [x] Add healing item handling.
+- [x] Add key item handling.
+- [x] Add simple inventory menu.
+- [x] Add healing action.
+- [x] Add health cap.
+- [x] Add item stack counts.
 
 ### Loot Types
 
-- [ ] Add handgun ammo.
-- [ ] Add small herb.
-- [ ] Add mixed herb.
-- [ ] Add first aid spray.
-- [ ] Add Village Gate Key.
-- [ ] Add Iron Sun Emblem.
-- [ ] Add notes.
+- [x] Add handgun ammo.
+- [x] Add small herb.
+- [x] Add mixed herb.
+- [x] Add first aid spray.
+- [x] Add Village Gate Key.
+- [x] Add Iron Sun Emblem.
+- [x] Add notes.
 - [ ] Add optional shotgun shells.
 - [ ] Add optional shotgun pickup.
 
 ### Gates And Interactions
 
-- [ ] Add village gate lock.
-- [ ] Unlock village gate with key.
-- [ ] Add mill crank interaction.
-- [ ] Add crank progress timer.
-- [ ] Interrupt crank on damage.
-- [ ] Add chapel altar interaction.
-- [ ] Open final arena after emblem placement.
-- [ ] Add escape gate locked until boss defeat.
+- [x] Add village gate lock.
+- [x] Unlock village gate with key.
+- [x] Add mill crank interaction.
+- [x] Add crank progress timer.
+- [x] Interrupt crank on damage.
+- [x] Add chapel altar interaction.
+- [x] Open final arena after emblem placement.
+- [x] Add escape gate locked until boss defeat.
 
 ### Objective System
 
-- [ ] Add objective state.
-- [ ] Add objective HUD updates.
-- [ ] Add Zone 1 objective.
-- [ ] Add Zone 2 objective.
-- [ ] Add Zone 3 objective.
-- [ ] Add boss objective.
-- [ ] Add escape objective.
+- [x] Add objective state.
+- [x] Add objective HUD updates.
+- [x] Add Zone 1 objective.
+- [x] Add Zone 2 objective.
+- [x] Add Zone 3 objective.
+- [x] Add boss objective.
+- [x] Add escape objective.
 
 ### Checkpoints
 
-- [ ] Add checkpoint state.
-- [ ] Add checkpoint trigger.
-- [ ] Save player spawn point.
-- [ ] Save progression flags.
-- [ ] Save collected pickup ids.
-- [ ] Save dead encounter ids.
-- [ ] Restore state after death.
-- [ ] Add anti-soft-lock ammo restoration if needed.
+- [x] Add checkpoint state.
+- [x] Add checkpoint trigger.
+- [x] Save player spawn point.
+- [x] Save progression flags.
+- [x] Save collected pickup ids.
+- [x] Save dead encounter ids.
+- [x] Restore state after death.
+- [x] Add anti-soft-lock ammo restoration if needed.
 
 ### Phase 5 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually playtest Phase 3 combat and Phase 4 enemy AI in browser, then start Phase 5 loot/inventory.
+- [ ] Visually playtest Phase 3 combat, Phase 4 enemy AI, and Phase 5 loot/inventory in browser, then start Phase 6 boss fight.

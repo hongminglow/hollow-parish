@@ -137,6 +137,15 @@ export function damagePlayer(player: PlayerState, damage: number) {
   return true;
 }
 
+export function healPlayer(player: PlayerState, amount: number) {
+  if (player.isDead || player.health >= 100) {
+    return false;
+  }
+
+  player.health = Math.min(100, player.health + amount);
+  return true;
+}
+
 export function respawnPlayer(player: PlayerState) {
   placePlayerAt(player, player.spawnPosition);
 }

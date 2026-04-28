@@ -220,6 +220,24 @@ export function resetEnemies(enemies: EnemyState[]) {
   }
 }
 
+export function getDeadEnemyIds(enemies: EnemyState[]) {
+  return enemies.filter((enemy) => enemy.isDead).map((enemy) => enemy.id);
+}
+
+export function restoreEnemiesFromCheckpoint(enemies: EnemyState[], deadEnemyIds: string[]) {
+  const deadIds = new Set(deadEnemyIds);
+
+  for (const enemy of enemies) {
+    enemy.position = { ...enemy.spawnPosition };
+    enemy.health = deadIds.has(enemy.id) ? 0 : enemy.maxHealth;
+    enemy.isDead = deadIds.has(enemy.id);
+    enemy.hitFlashRemaining = 0;
+    enemy.attackCooldownRemaining = 0;
+    enemy.attackHasDamaged = false;
+    enterState(enemy, enemy.isDead ? "dead" : "idle", 0);
+  }
+}
+
 function updateEnemyState(
   enemy: EnemyState,
   enemies: EnemyState[],

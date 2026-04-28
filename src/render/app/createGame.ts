@@ -1,17 +1,31 @@
 import * as THREE from "three";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
-import { resolveHitscanShot } from "../../game/simulation/combat";
 import {
-  alertEnemiesToNoise,
-  createEnemies,
-  resetEnemies,
-  updateEnemies,
-} from "../../game/simulation/enemies";
+  createCheckpointSnapshot,
+  restoreCheckpointSnapshot,
+  type CheckpointSnapshot,
+} from "../../game/simulation/checkpoints";
+import { resolveHitscanShot } from "../../game/simulation/combat";
+import { alertEnemiesToNoise, createEnemies, updateEnemies } from "../../game/simulation/enemies";
+import {
+  createInventoryState,
+  getInventoryRows,
+  useBestHealingItem,
+} from "../../game/simulation/inventory";
+import {
+  completeInteraction,
+  enforceProgressionLocks,
+  findNearbyInteraction,
+  getInteractionPrompt,
+  tryUseInteraction,
+  unlockFlagsForZone,
+  type InteractionId,
+} from "../../game/simulation/interactions";
+import { collectPickup, createPickupState, findNearbyPickup } from "../../game/simulation/pickups";
 import {
   createPlayerState,
   placePlayerAt,
-  respawnPlayer,
   setPlayerSpawn,
   syncPlayerPhysics,
   updatePlayerTimers,
@@ -19,6 +33,7 @@ import {
 } from "../../game/simulation/player";
 import {
   createProgressionState,
+  getCurrentObjective,
   getCheckpointForZone,
   getZoneByIndex,
   updateProgression,
@@ -36,8 +51,10 @@ import { createCombatFeedback } from "../effects/combatFeedback";
 import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
 import { createEnemyView } from "../objects/enemyView";
 import { createMapBlockoutView } from "../objects/mapBlockoutView";
+import { createPickupView } from "../objects/pickupView";
 import { createPlayerView } from "../objects/playerView";
 import { createHud } from "../../ui/hud/createHud";
+import { createInventoryMenu } from "../../ui/menus/createInventoryMenu";
 import { createRuntimeErrorPanel } from "../../ui/overlays/createRuntimeErrorPanel";
 import { createCamera } from "./createCamera";
 import { createRenderer } from "./createRenderer";
@@ -56,18 +73,22 @@ export async function createGame(root: HTMLElement) {
 
   const player = createPlayerState(mapBlockout.initialSpawn);
   const weapon = createWeaponState();
+  const inventory = createInventoryState();
   const enemies = createEnemies();
+  const pickups = createPickupState();
   const progression = createProgressionState();
   const physics = await createPhysicsWorld(player.spawnPosition, mapBlockout.staticColliders);
   const scene = createScene();
   const camera = createCamera();
   const mapView = createMapBlockoutView(scene);
   const enemyView = createEnemyView(scene, enemies);
+  const pickupView = createPickupView(scene, pickups);
   const playerView = createPlayerView(scene);
   const combatFeedback = createCombatFeedback(scene);
   const cameraController = createThirdPersonCamera(camera);
   const input = createKeyboardMouseInput(renderer.domElement);
   const hud = createHud(shell);
+  const inventoryMenu = createInventoryMenu(shell);
   const debugPanel = createDebugPanel(shell);
   const errorPanel = createRuntimeErrorPanel(shell);
 
@@ -79,6 +100,21 @@ export async function createGame(root: HTMLElement) {
   let frameInput: InputFrame = input.consumeFrame();
   let combatMessage = "";
   let combatMessageRemaining = 0;
+  let isInventoryOpen = false;
+  let activeInteraction: {
+    id: InteractionId;
+    label: string;
+    remaining: number;
+    total: number;
+    startHealth: number;
+  } | null = null;
+  let checkpointSnapshot: CheckpointSnapshot = createCheckpointSnapshot(
+    weapon,
+    inventory,
+    progression,
+    pickups,
+    enemies,
+  );
 
   function resize() {
     const width = Math.max(1, shell.clientWidth);
@@ -110,6 +146,19 @@ export async function createGame(root: HTMLElement) {
     resize();
   }
 
+  function saveCheckpointSnapshot() {
+    checkpointSnapshot = createCheckpointSnapshot(weapon, inventory, progression, pickups, enemies);
+  }
+
+  function syncCheckpointIfChanged(previousCheckpointId: string) {
+    if (progression.currentCheckpoint.id === previousCheckpointId) {
+      return;
+    }
+
+    saveCheckpointSnapshot();
+    showCombatMessage(`Checkpoint: ${progression.currentCheckpoint.name}`, 1.2);
+  }
+
   function fixedUpdate(deltaSeconds: number, inputState: InputFrame) {
     updatePlayerTimers(player, deltaSeconds);
     const enemyEvents = updateEnemies(enemies, player, mapBlockout.staticColliders, deltaSeconds);
@@ -124,8 +173,19 @@ export async function createGame(root: HTMLElement) {
     const physicsResult = physics.movePlayer(desiredTranslation, deltaSeconds);
 
     syncPlayerPhysics(player, physicsResult);
+    const previousCheckpointId = progression.currentCheckpoint.id;
     updateProgression(progression, player.position);
     setPlayerSpawn(player, progression.currentCheckpoint.position);
+    syncCheckpointIfChanged(previousCheckpointId);
+
+    const lockMessage = enforceProgressionLocks(player, progression);
+
+    if (lockMessage) {
+      physics.resetPlayer(player.position);
+      updateProgression(progression, player.position);
+      setPlayerSpawn(player, progression.currentCheckpoint.position);
+      showCombatMessage(lockMessage, 0.9);
+    }
 
     for (const event of enemyEvents) {
       if (event.type === "alerted") {
@@ -146,17 +206,26 @@ export async function createGame(root: HTMLElement) {
     const zone = getZoneByIndex(index);
     const checkpoint = getCheckpointForZone(zone);
 
+    unlockFlagsForZone(index, progression);
     progression.currentZone = zone;
     progression.currentCheckpoint = checkpoint;
     setPlayerSpawn(player, checkpoint.position);
     placePlayerAt(player, checkpoint.position);
     physics.resetPlayer(checkpoint.position);
+    saveCheckpointSnapshot();
   }
 
   function restartFromCheckpoint() {
-    respawnPlayer(player);
+    restoreCheckpointSnapshot(
+      checkpointSnapshot,
+      player,
+      weapon,
+      inventory,
+      progression,
+      pickups,
+      enemies,
+    );
     physics.resetPlayer(player.spawnPosition);
-    resetEnemies(enemies);
   }
 
   function showCombatMessage(message: string, duration = 1.1) {
@@ -170,6 +239,137 @@ export async function createGame(root: HTMLElement) {
     if (combatMessageRemaining === 0) {
       combatMessage = "";
     }
+  }
+
+  function setInventoryOpen(nextOpen: boolean) {
+    isInventoryOpen = nextOpen;
+
+    if (isInventoryOpen && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  }
+
+  function handleHeal() {
+    const result = useBestHealingItem(inventory, player);
+    showCombatMessage(result.message);
+
+    if (result.used) {
+      saveCheckpointSnapshot();
+    }
+  }
+
+  function handleInteract() {
+    const pickup = findNearbyPickup(pickups, player.position);
+
+    if (pickup) {
+      const result = collectPickup(pickup, inventory, weapon);
+      showCombatMessage(result.message);
+
+      if (result.collected) {
+        saveCheckpointSnapshot();
+      }
+
+      return;
+    }
+
+    const interaction = findNearbyInteraction(player.position, progression);
+
+    if (!interaction) {
+      showCombatMessage("Nothing nearby", 0.7);
+      return;
+    }
+
+    const result = tryUseInteraction(interaction, inventory, progression);
+    showCombatMessage(result.message);
+
+    if (result.type === "timed") {
+      activeInteraction = {
+        id: result.interaction.id,
+        label: result.interaction.label,
+        remaining: result.interaction.duration,
+        total: result.interaction.duration,
+        startHealth: player.health,
+      };
+      return;
+    }
+
+    if (result.type === "complete") {
+      saveCheckpointSnapshot();
+    }
+  }
+
+  function updateActiveInteraction(deltaSeconds: number, inputState: InputFrame) {
+    if (!activeInteraction) {
+      return;
+    }
+
+    if (!inputState.isHeld("interact")) {
+      showCombatMessage(`${activeInteraction.label} interrupted`, 0.7);
+      activeInteraction = null;
+      return;
+    }
+
+    if (player.health < activeInteraction.startHealth) {
+      showCombatMessage(`${activeInteraction.label} interrupted by damage`, 0.85);
+      activeInteraction = null;
+      return;
+    }
+
+    activeInteraction.remaining = Math.max(0, activeInteraction.remaining - deltaSeconds);
+
+    if (activeInteraction.remaining > 0) {
+      return;
+    }
+
+    const result = completeInteraction(activeInteraction.id, progression);
+    showCombatMessage(result.message);
+    activeInteraction = null;
+    saveCheckpointSnapshot();
+  }
+
+  function updateBossProgression() {
+    if (progression.flags.bossDefeated) {
+      return;
+    }
+
+    const boss = enemies.find((enemy) => enemy.kind === "boss");
+
+    if (boss?.isDead) {
+      progression.flags.bossDefeated = true;
+      showCombatMessage("The Bellkeeper is down. Find the escape gate.", 1.4);
+      saveCheckpointSnapshot();
+    }
+  }
+
+  function getPromptText() {
+    if (isInventoryOpen) {
+      return "Inventory open | Tab close | H heal";
+    }
+
+    if (activeInteraction) {
+      const progress = Math.round(
+        ((activeInteraction.total - activeInteraction.remaining) / activeInteraction.total) * 100,
+      );
+      return `Hold E: ${activeInteraction.label} ${progress}%`;
+    }
+
+    const pickup = findNearbyPickup(pickups, player.position);
+
+    if (pickup) {
+      return `E: Collect ${pickup.label}`;
+    }
+
+    const interactionPrompt = getInteractionPrompt(
+      findNearbyInteraction(player.position, progression),
+    );
+
+    if (interactionPrompt) {
+      return interactionPrompt;
+    }
+
+    return frameInput.pointerLocked
+      ? "Aim + left click fire | E interact | H heal | Tab inventory"
+      : "Click the canvas to lock pointer. Follow the route from road to bell tower.";
   }
 
   function getCameraRay() {
@@ -247,11 +447,16 @@ export async function createGame(root: HTMLElement) {
 
     if (frameInput.wasPressed("pause")) {
       setPaused(!isPaused);
+      setInventoryOpen(false);
     }
 
     if (player.isDead && frameInput.wasPressed("restart")) {
       restartFromCheckpoint();
       showCombatMessage("Checkpoint restored");
+    }
+
+    if (frameInput.wasPressed("inventory")) {
+      setInventoryOpen(!isInventoryOpen);
     }
 
     if (frameInput.wasPressed("toggleDebug")) {
@@ -274,13 +479,17 @@ export async function createGame(root: HTMLElement) {
       skipToZone(3);
     }
 
-    if (!isPaused) {
+    const isGameBlocked = isPaused || isInventoryOpen;
+
+    if (!isGameBlocked) {
       cameraController.applyLook(frameInput.mouseDelta);
     }
 
-    if (!isPaused) {
+    if (!isGameBlocked) {
       updateWeapon(weapon, deltaSeconds);
       updateCombatMessage(deltaSeconds);
+      updateActiveInteraction(deltaSeconds, frameInput);
+      updateBossProgression();
 
       accumulator = Math.min(maxAccumulatedTime, accumulator + deltaSeconds);
 
@@ -291,12 +500,20 @@ export async function createGame(root: HTMLElement) {
       }
     }
 
-    if (!isPaused && !player.isDead && frameInput.wasPressed("reload")) {
+    if (!isGameBlocked && !player.isDead && frameInput.wasPressed("interact")) {
+      handleInteract();
+    }
+
+    if (!isGameBlocked && !player.isDead && frameInput.wasPressed("heal")) {
+      handleHeal();
+    }
+
+    if (!isGameBlocked && !player.isDead && frameInput.wasPressed("reload")) {
       showCombatMessage(tryStartReload(weapon) ? "Reloading" : "Cannot reload");
     }
 
     if (player.position.y < -6) {
-      respawnPlayer(player);
+      restartFromCheckpoint();
       physics.resetPlayer(player.spawnPosition);
     }
 
@@ -308,23 +525,23 @@ export async function createGame(root: HTMLElement) {
     });
     playerView.sync(player);
     enemyView.sync();
+    pickupView.sync(elapsed);
     combatFeedback.update(deltaSeconds);
 
-    if (!isPaused && !player.isDead && frameInput.wasPressed("shoot")) {
+    if (!isGameBlocked && !player.isDead && frameInput.wasPressed("shoot")) {
       handleShoot();
     }
 
     hud.update({
       health: player.health,
       ammo: getAmmoText(weapon),
-      objective: `${progression.currentZone.name}: ${progression.currentZone.objective}`,
-      prompt: frameInput.pointerLocked
-        ? "Aim + left click fire | R reload | Enemies now detect, chase, and attack"
-        : "Click the canvas to lock pointer. Follow the route from road to bell tower.",
+      objective: getCurrentObjective(progression),
+      prompt: getPromptText(),
       message: combatMessage,
       isDead: player.isDead,
     });
-    hud.setReticleVisible(player.isAiming);
+    hud.setReticleVisible(player.isAiming && !isInventoryOpen);
+    inventoryMenu.update(getInventoryRows(inventory, weapon), isInventoryOpen);
 
     debugPanel.update({
       fps: deltaSeconds > 0 ? 1 / deltaSeconds : 0,
@@ -376,6 +593,7 @@ export async function createGame(root: HTMLElement) {
     renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
     playerView.dispose();
     enemyView.dispose();
+    pickupView.dispose();
     mapView.dispose();
     combatFeedback.dispose();
     physics.dispose();

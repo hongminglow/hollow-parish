@@ -145,8 +145,8 @@ src/
 
 ## Current Status
 
-Phase 0 through Phase 3 implementation is in place, with a Phase 4 enemy AI first pass now added. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy detection, chase movement, attack windups, active damage windows, recovery, stagger, hearing from gunshots, and basic enemy variants.
+Phase 0 through Phase 5 implementation is in place. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy detection, chase movement, attack windups, active damage windows, recovery, stagger, hearing from gunshots, basic enemy variants, collectable loot, key items, healing, a Tab inventory menu, route locks, timed interactions, objective updates, and checkpoint state restoration.
 
 Next task:
 
-- Visually playtest Phase 3 combat and Phase 4 enemy AI in a browser, then continue into Phase 5 loot and inventory.
+- Visually playtest Phase 3 combat, Phase 4 enemy AI, and Phase 5 loot/inventory in a browser, then continue into Phase 6 boss fight.
