@@ -448,40 +448,40 @@ Goal: add a complete final boss encounter with two phases and a win state.
 
 ### Boss Foundation
 
-- [ ] Add boss simulation state.
-- [ ] Add boss placeholder model.
-- [ ] Add boss collider.
-- [ ] Add boss health.
-- [ ] Add boss health bar.
-- [ ] Add boss arena activation trigger.
-- [ ] Lock arena after boss starts.
+- [x] Add boss simulation state.
+- [x] Add boss placeholder model.
+- [x] Add boss collider.
+- [x] Add boss health.
+- [x] Add boss health bar.
+- [x] Add boss arena activation trigger.
+- [x] Lock arena after boss starts.
 
 ### Boss Phase 1
 
-- [ ] Add slow pursuit.
-- [ ] Add melee swing.
-- [ ] Add charge windup.
-- [ ] Add charge movement.
-- [ ] Add wall impact recovery.
-- [ ] Add vulnerability window after charge miss.
-- [ ] Add boss stagger feedback.
+- [x] Add slow pursuit.
+- [x] Add melee swing.
+- [x] Add charge windup.
+- [x] Add charge movement.
+- [x] Add wall impact recovery.
+- [x] Add vulnerability window after charge miss.
+- [x] Add boss stagger feedback.
 
 ### Boss Phase 2
 
-- [ ] Trigger phase 2 at 50 percent health.
-- [ ] Increase boss movement pressure.
-- [ ] Add ground slam windup.
-- [ ] Add ground slam damage area.
-- [ ] Add minion summon.
-- [ ] Limit active minions.
-- [ ] Add phase transition feedback.
+- [x] Trigger phase 2 at 50 percent health.
+- [x] Increase boss movement pressure.
+- [x] Add ground slam windup.
+- [x] Add ground slam damage area.
+- [x] Add minion summon.
+- [x] Limit active minions.
+- [x] Add phase transition feedback.
 
 ### Boss Completion
 
-- [ ] Add boss death state.
-- [ ] Unlock escape gate after boss death.
-- [ ] Add victory interaction.
-- [ ] Add win screen.
+- [x] Add boss death state.
+- [x] Unlock escape gate after boss death.
+- [x] Add victory interaction.
+- [x] Add win screen.
 - [ ] Add completion stats.
 
 ### Phase 6 Acceptance
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually playtest Phase 3 combat, Phase 4 enemy AI, and Phase 5 loot/inventory in browser, then start Phase 6 boss fight.
+- [ ] Visually playtest Phases 3-6 in browser, then start Phase 7 art/audio/UI polish.

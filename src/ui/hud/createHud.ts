@@ -5,6 +5,14 @@ type HudState = {
   prompt: string;
   message: string;
   isDead: boolean;
+  hasWon: boolean;
+  boss: {
+    isVisible: boolean;
+    label: string;
+    phase: string;
+    health: number;
+    maxHealth: number;
+  };
 };
 
 export function createHud(parent: HTMLElement) {
@@ -27,6 +35,15 @@ export function createHud(parent: HTMLElement) {
     </section>
     <div class="prompt" data-hud-prompt></div>
     <div class="combat-message" data-hud-message></div>
+    <section class="boss-hud" data-hud-boss>
+      <div class="boss-hud-top">
+        <span data-hud-boss-label></span>
+        <strong data-hud-boss-phase></strong>
+      </div>
+      <div class="boss-health-track">
+        <div class="boss-health-fill" data-hud-boss-fill></div>
+      </div>
+    </section>
     <div class="reticle" data-hud-reticle aria-hidden="true"></div>
     <section class="pause-overlay" data-hud-pause>
       <div class="pause-card">
@@ -41,6 +58,13 @@ export function createHud(parent: HTMLElement) {
         <p class="death-copy">Press Space to restart from the latest checkpoint.</p>
       </div>
     </section>
+    <section class="win-overlay" data-hud-win>
+      <div class="win-card">
+        <div class="win-kicker">Escape Confirmed</div>
+        <h1 class="win-title">The bell goes quiet.</h1>
+        <p class="win-copy">The prototype route is complete: explore, loot, fight, defeat The Bellkeeper, and escape.</p>
+      </div>
+    </section>
   `;
   parent.append(hud);
 
@@ -52,6 +76,11 @@ export function createHud(parent: HTMLElement) {
   const prompt = requireElement(hud, "[data-hud-prompt]");
   const message = requireElement(hud, "[data-hud-message]");
   const death = requireElement(hud, "[data-hud-death]");
+  const boss = requireElement(hud, "[data-hud-boss]");
+  const bossLabel = requireElement(hud, "[data-hud-boss-label]");
+  const bossPhase = requireElement(hud, "[data-hud-boss-phase]");
+  const bossFill = requireElement(hud, "[data-hud-boss-fill]");
+  const win = requireElement(hud, "[data-hud-win]");
 
   function update(state: HudState) {
     objective.textContent = state.objective;
@@ -61,6 +90,14 @@ export function createHud(parent: HTMLElement) {
     message.textContent = state.message;
     message.classList.toggle("is-visible", state.message.length > 0);
     death.classList.toggle("is-visible", state.isDead);
+    boss.classList.toggle("is-visible", state.boss.isVisible);
+    bossLabel.textContent = state.boss.label;
+    bossPhase.textContent = state.boss.phase;
+    bossFill.style.width = `${Math.max(
+      0,
+      Math.min(100, (state.boss.health / state.boss.maxHealth) * 100),
+    )}%`;
+    win.classList.toggle("is-visible", state.hasWon);
   }
 
   return {

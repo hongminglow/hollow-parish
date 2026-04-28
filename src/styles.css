@@ -182,6 +182,62 @@ button {
   opacity: 1;
 }
 
+.boss-hud {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: min(520px, calc(100vw - 40px));
+  padding: 12px 14px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(189, 76, 50, 0.44);
+  border-radius: 14px;
+  background: rgba(13, 8, 8, 0.72);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  backdrop-filter: blur(10px);
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    visibility 160ms ease;
+}
+
+.boss-hud.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.boss-hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #f7dfb6;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.boss-hud-top strong {
+  color: var(--danger);
+}
+
+.boss-health-track {
+  height: 8px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(243, 234, 217, 0.12);
+}
+
+.boss-health-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #bd4c32, #f0b45b);
+  transition: width 140ms ease;
+}
+
 .debug-panel {
   position: absolute;
   right: 20px;
@@ -213,12 +269,16 @@ button {
     visibility 160ms ease;
 }
 
-.death-overlay {
+.death-overlay,
+.win-overlay {
   pointer-events: auto;
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
+}
+
+.death-overlay {
   background:
     radial-gradient(circle at 50% 42%, rgba(124, 28, 20, 0.24), transparent 22rem),
     rgba(5, 7, 7, 0.72);
@@ -227,6 +287,53 @@ button {
   transition:
     opacity 180ms ease,
     visibility 180ms ease;
+}
+
+.win-overlay {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(215, 166, 71, 0.18), transparent 24rem),
+    rgba(5, 7, 7, 0.74);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 220ms ease,
+    visibility 220ms ease;
+}
+
+.win-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.win-card {
+  width: min(540px, calc(100vw - 40px));
+  padding: 34px;
+  border: 1px solid rgba(215, 166, 71, 0.48);
+  border-radius: 20px;
+  background: rgba(12, 11, 8, 0.92);
+  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.56);
+  text-align: center;
+}
+
+.win-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.win-title {
+  margin: 8px 0 0;
+  color: var(--hud-text);
+  font-size: clamp(30px, 5.4vw, 46px);
+  line-height: 1;
+}
+
+.win-copy {
+  margin: 14px 0 0;
+  color: var(--hud-muted);
+  line-height: 1.6;
 }
 
 .inventory-menu {

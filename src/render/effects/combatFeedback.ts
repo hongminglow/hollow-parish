@@ -57,6 +57,22 @@ export function createCombatFeedback(scene: THREE.Scene) {
     effects.push({ object: mesh, remaining: 0.16 });
   }
 
+  function spawnArea(point: Vec3, radius: number, color = 0xd75a3a, duration = 0.42) {
+    const mesh = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.045, 8, 72),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.8,
+      }),
+    );
+
+    mesh.position.set(point.x, point.y + 0.06, point.z);
+    mesh.rotation.x = Math.PI / 2;
+    group.add(mesh);
+    effects.push({ object: mesh, remaining: duration });
+  }
+
   function update(deltaSeconds: number) {
     for (let index = effects.length - 1; index >= 0; index -= 1) {
       const effect = effects[index];
@@ -96,6 +112,7 @@ export function createCombatFeedback(scene: THREE.Scene) {
     spawnMuzzleFlash,
     spawnShot,
     spawnHit,
+    spawnArea,
     update,
     dispose,
   };

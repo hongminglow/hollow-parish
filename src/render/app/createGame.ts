@@ -2,6 +2,14 @@ import * as THREE from "three";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
 import {
+  createBossEncounterState,
+  enforceBossArenaLock,
+  getBossHudState,
+  resetBossEncounter,
+  updateBossEncounter,
+  type BossEvent,
+} from "../../game/simulation/boss";
+import {
   createCheckpointSnapshot,
   restoreCheckpointSnapshot,
   type CheckpointSnapshot,
@@ -75,6 +83,7 @@ export async function createGame(root: HTMLElement) {
   const weapon = createWeaponState();
   const inventory = createInventoryState();
   const enemies = createEnemies();
+  const bossEncounter = createBossEncounterState();
   const pickups = createPickupState();
   const progression = createProgressionState();
   const physics = await createPhysicsWorld(player.spawnPosition, mapBlockout.staticColliders);
@@ -187,6 +196,23 @@ export async function createGame(root: HTMLElement) {
       showCombatMessage(lockMessage, 0.9);
     }
 
+    const arenaLockMessage = enforceBossArenaLock(player, bossEncounter);
+
+    if (arenaLockMessage) {
+      physics.resetPlayer(player.position);
+      showCombatMessage(arenaLockMessage, 0.8);
+    }
+
+    const bossEvents = updateBossEncounter(
+      bossEncounter,
+      enemies,
+      player,
+      mapBlockout.staticColliders,
+      deltaSeconds,
+      progression.flags.chapelEmblemPlaced,
+    );
+    handleBossEvents(bossEvents);
+
     for (const event of enemyEvents) {
       if (event.type === "alerted") {
         showCombatMessage(`${event.enemy.label} noticed you`, 0.7);
@@ -212,6 +238,7 @@ export async function createGame(root: HTMLElement) {
     setPlayerSpawn(player, checkpoint.position);
     placePlayerAt(player, checkpoint.position);
     physics.resetPlayer(checkpoint.position);
+    resetBossEncounter(bossEncounter);
     saveCheckpointSnapshot();
   }
 
@@ -226,6 +253,11 @@ export async function createGame(root: HTMLElement) {
       enemies,
     );
     physics.resetPlayer(player.spawnPosition);
+    resetBossEncounter(bossEncounter);
+
+    if (progression.flags.bossDefeated) {
+      bossEncounter.isDefeated = true;
+    }
   }
 
   function showCombatMessage(message: string, duration = 1.1) {
@@ -294,6 +326,10 @@ export async function createGame(root: HTMLElement) {
     }
 
     if (result.type === "complete") {
+      if (progression.flags.escapeGateUnlocked) {
+        showCombatMessage("You escaped the parish", 1.8);
+      }
+
       saveCheckpointSnapshot();
     }
   }
@@ -327,21 +363,11 @@ export async function createGame(root: HTMLElement) {
     saveCheckpointSnapshot();
   }
 
-  function updateBossProgression() {
-    if (progression.flags.bossDefeated) {
-      return;
-    }
-
-    const boss = enemies.find((enemy) => enemy.kind === "boss");
-
-    if (boss?.isDead) {
-      progression.flags.bossDefeated = true;
-      showCombatMessage("The Bellkeeper is down. Find the escape gate.", 1.4);
-      saveCheckpointSnapshot();
-    }
-  }
-
   function getPromptText() {
+    if (progression.flags.escapeGateUnlocked) {
+      return "Prototype complete";
+    }
+
     if (isInventoryOpen) {
       return "Inventory open | Tab close | H heal";
     }
@@ -440,6 +466,48 @@ export async function createGame(root: HTMLElement) {
     showCombatMessage("Miss");
   }
 
+  function handleBossEvents(events: BossEvent[]) {
+    for (const event of events) {
+      if (event.type === "started") {
+        showCombatMessage("The Bellkeeper rises", 1.35);
+      }
+
+      if (event.type === "phase-two") {
+        showCombatMessage("The Bellkeeper breaks its chain", 1.45);
+        combatFeedback.spawnArea(event.boss.position, 5.2, 0xd7a647, 0.8);
+      }
+
+      if (event.type === "charge-windup") {
+        showCombatMessage("Charge incoming", 0.7);
+      }
+
+      if (event.type === "charge-impact") {
+        combatFeedback.spawnHit(event.boss.position, event.hitPlayer ? 0xffd46b : 0x8f9ba2);
+        showCombatMessage(event.hitPlayer ? "Crushed by charge" : "Charge missed", 0.8);
+      }
+
+      if (event.type === "slam-windup") {
+        combatFeedback.spawnArea(event.boss.position, event.radius, 0xbd4c32, 1);
+        showCombatMessage("Ground slam", 0.75);
+      }
+
+      if (event.type === "slam-impact") {
+        combatFeedback.spawnArea(event.boss.position, event.radius, 0xffd46b, 0.45);
+        showCombatMessage(event.hitPlayer ? "Slam hit" : "Slam missed", 0.8);
+      }
+
+      if (event.type === "minions-summoned") {
+        showCombatMessage(`${event.count} minion${event.count === 1 ? "" : "s"} summoned`, 1);
+      }
+
+      if (event.type === "defeated") {
+        progression.flags.bossDefeated = true;
+        showCombatMessage("The Bellkeeper is down. Find the escape gate.", 1.6);
+        saveCheckpointSnapshot();
+      }
+    }
+  }
+
   function render(time: number) {
     const deltaSeconds = Math.min(0.1, (time - previousTime) / 1000);
     previousTime = time;
@@ -479,7 +547,8 @@ export async function createGame(root: HTMLElement) {
       skipToZone(3);
     }
 
-    const isGameBlocked = isPaused || isInventoryOpen;
+    const hasWon = progression.flags.escapeGateUnlocked;
+    const isGameBlocked = isPaused || isInventoryOpen || hasWon;
 
     if (!isGameBlocked) {
       cameraController.applyLook(frameInput.mouseDelta);
@@ -489,7 +558,6 @@ export async function createGame(root: HTMLElement) {
       updateWeapon(weapon, deltaSeconds);
       updateCombatMessage(deltaSeconds);
       updateActiveInteraction(deltaSeconds, frameInput);
-      updateBossProgression();
 
       accumulator = Math.min(maxAccumulatedTime, accumulator + deltaSeconds);
 
@@ -539,6 +607,8 @@ export async function createGame(root: HTMLElement) {
       prompt: getPromptText(),
       message: combatMessage,
       isDead: player.isDead,
+      hasWon,
+      boss: getBossHudState(bossEncounter, enemies),
     });
     hud.setReticleVisible(player.isAiming && !isInventoryOpen);
     inventoryMenu.update(getInventoryRows(inventory, weapon), isInventoryOpen);
