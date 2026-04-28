@@ -1,8 +1,13 @@
 import * as THREE from "three";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
-import { applyEnemyContactDamage, resolveHitscanShot } from "../../game/simulation/combat";
-import { createEnemies, resetEnemies, updateEnemies } from "../../game/simulation/enemies";
+import { resolveHitscanShot } from "../../game/simulation/combat";
+import {
+  alertEnemiesToNoise,
+  createEnemies,
+  resetEnemies,
+  updateEnemies,
+} from "../../game/simulation/enemies";
 import {
   createPlayerState,
   placePlayerAt,
@@ -107,7 +112,7 @@ export async function createGame(root: HTMLElement) {
 
   function fixedUpdate(deltaSeconds: number, inputState: InputFrame) {
     updatePlayerTimers(player, deltaSeconds);
-    updateEnemies(enemies, deltaSeconds);
+    const enemyEvents = updateEnemies(enemies, player, mapBlockout.staticColliders, deltaSeconds);
 
     const desiredTranslation = updatePlayerMoveIntent(player, {
       movementAxis: inputState.movementAxis(),
@@ -122,10 +127,18 @@ export async function createGame(root: HTMLElement) {
     updateProgression(progression, player.position);
     setPlayerSpawn(player, progression.currentCheckpoint.position);
 
-    const contactEnemy = applyEnemyContactDamage(enemies, player);
+    for (const event of enemyEvents) {
+      if (event.type === "alerted") {
+        showCombatMessage(`${event.enemy.label} noticed you`, 0.7);
+      }
 
-    if (contactEnemy) {
-      showCombatMessage(`${contactEnemy.label} hit you`);
+      if (event.type === "player-hit") {
+        showCombatMessage(`${event.enemy.label} hit you for ${event.damage}`);
+      }
+
+      if (event.type === "attack-start") {
+        showCombatMessage(`${event.enemy.label} attacks`, 0.55);
+      }
     }
   }
 
@@ -199,6 +212,7 @@ export async function createGame(root: HTMLElement) {
     const ray = getCameraRay();
     const wallDistance = physics.castCameraRay(ray.origin, ray.direction, weapon.config.range);
     const result = resolveHitscanShot(weapon, enemies, ray, wallDistance);
+    alertEnemiesToNoise(enemies, player.position, weapon.config.range * 0.65);
 
     combatFeedback.spawnMuzzleFlash(ray.origin, ray.direction);
     combatFeedback.spawnShot(
@@ -305,7 +319,7 @@ export async function createGame(root: HTMLElement) {
       ammo: getAmmoText(weapon),
       objective: `${progression.currentZone.name}: ${progression.currentZone.objective}`,
       prompt: frameInput.pointerLocked
-        ? "Aim + left click fire | R reload | Stand near enemies to test damage"
+        ? "Aim + left click fire | R reload | Enemies now detect, chase, and attack"
         : "Click the canvas to lock pointer. Follow the route from road to bell tower.",
       message: combatMessage,
       isDead: player.isDead,
@@ -324,6 +338,7 @@ export async function createGame(root: HTMLElement) {
       zoneName: progression.currentZone.name,
       checkpointName: progression.currentCheckpoint.name,
       aliveEnemies: enemies.filter((enemy) => !enemy.isDead).length,
+      enemyAi: summarizeEnemyAi(),
       ammo: getAmmoText(weapon),
     });
 
@@ -339,6 +354,17 @@ export async function createGame(root: HTMLElement) {
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
     animationFrame = requestAnimationFrame(render);
+  }
+
+  function summarizeEnemyAi() {
+    const counts = enemies.reduce<Record<string, number>>((summary, enemy) => {
+      summary[enemy.state] = (summary[enemy.state] ?? 0) + 1;
+      return summary;
+    }, {});
+
+    return Object.entries(counts)
+      .map(([state, count]) => `${state}:${count}`)
+      .join(" ");
   }
 
   function dispose() {

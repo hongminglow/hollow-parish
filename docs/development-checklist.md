@@ -298,61 +298,61 @@ Goal: make enemies detect, chase, attack, stagger, and pressure the player.
 
 ### AI State Machine
 
-- [ ] Implement `Idle`.
-- [ ] Implement `Alert`.
-- [ ] Implement `Chase`.
-- [ ] Implement `AttackWindup`.
-- [ ] Implement `AttackActive`.
-- [ ] Implement `AttackRecovery`.
-- [ ] Implement `Staggered`.
-- [ ] Implement `Dead`.
+- [x] Implement `Idle`.
+- [x] Implement `Alert`.
+- [x] Implement `Chase`.
+- [x] Implement `AttackWindup`.
+- [x] Implement `AttackActive`.
+- [x] Implement `AttackRecovery`.
+- [x] Implement `Staggered`.
+- [x] Implement `Dead`.
 - [ ] Add state transition logging in debug mode.
 
 ### Enemy Movement
 
 - [ ] Add enemy capsule collider.
-- [ ] Add enemy movement speed.
-- [ ] Add direct chase movement.
-- [ ] Add simple obstacle response.
+- [x] Add enemy movement speed.
+- [x] Add direct chase movement.
+- [x] Add simple obstacle response.
 - [ ] Add per-zone waypoint fallback.
-- [ ] Prevent enemies from stacking too tightly.
-- [ ] Prevent enemies from pushing player through walls.
+- [x] Prevent enemies from stacking too tightly.
+- [x] Prevent enemies from pushing player through walls.
 
 ### Enemy Detection
 
-- [ ] Add detection radius.
-- [ ] Add line-of-sight check.
-- [ ] Add hearing/noise trigger from gunshot.
-- [ ] Add alert propagation within encounter.
-- [ ] Add dormant enemy wake trigger.
+- [x] Add detection radius.
+- [x] Add line-of-sight check.
+- [x] Add hearing/noise trigger from gunshot.
+- [x] Add alert propagation within encounter.
+- [x] Add dormant enemy wake trigger.
 
 ### Enemy Attacks
 
-- [ ] Add melee range check.
-- [ ] Add attack windup.
-- [ ] Add active damage window.
-- [ ] Add recovery time.
-- [ ] Add attack cooldown.
-- [ ] Add player hit response.
-- [ ] Add attack telegraph visual.
+- [x] Add melee range check.
+- [x] Add attack windup.
+- [x] Add active damage window.
+- [x] Add recovery time.
+- [x] Add attack cooldown.
+- [x] Add player hit response.
+- [x] Add attack telegraph visual.
 
 ### Enemy Variants
 
-- [ ] Add standard infected config.
-- [ ] Add hook infected config.
-- [ ] Add armored infected config.
-- [ ] Add body damage resistance for armored infected.
-- [ ] Add per-variant placeholder visuals.
+- [x] Add standard infected config.
+- [x] Add hook infected config.
+- [x] Add armored infected config.
+- [x] Add body damage resistance for armored infected.
+- [x] Add per-variant placeholder visuals.
 
 ### Encounters
 
-- [ ] Add Zone 1 first enemy.
+- [x] Add Zone 1 first enemy.
 - [ ] Add Zone 1 shrine enemy wakeup.
-- [ ] Add Zone 2 group encounter.
-- [ ] Add Zone 2 hook infected.
-- [ ] Add Zone 3 dormant infected.
-- [ ] Add Zone 3 armored infected.
-- [ ] Add encounter reset behavior on checkpoint restart.
+- [x] Add Zone 2 group encounter.
+- [x] Add Zone 2 hook infected.
+- [x] Add Zone 3 dormant infected.
+- [x] Add Zone 3 armored infected.
+- [x] Add encounter reset behavior on checkpoint restart.
 
 ### Phase 4 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually playtest Phase 3 combat in browser, then start Phase 4 enemy AI.
+- [ ] Visually playtest Phase 3 combat and Phase 4 enemy AI in browser, then start Phase 5 loot/inventory.

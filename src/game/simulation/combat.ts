@@ -1,6 +1,6 @@
 import type { WeaponState } from "./weapon";
 import { damageEnemy, type EnemyState } from "./enemies";
-import { damagePlayer, type PlayerState, type Vec3 } from "./player";
+import type { Vec3 } from "./player";
 
 export type Ray = {
   origin: Vec3;
@@ -48,10 +48,14 @@ export function resolveHitscanShot(
     };
   }
 
-  const damage =
+  const baseDamage =
     closest.hitPart === "head"
       ? Math.round(weapon.config.damage * weapon.config.headMultiplier)
       : weapon.config.damage;
+  const damage =
+    closest.hitPart === "body"
+      ? Math.max(1, Math.round(baseDamage * closest.enemy.damageResistance))
+      : baseDamage;
 
   damageEnemy(closest.enemy, damage);
 
@@ -62,33 +66,6 @@ export function resolveHitscanShot(
     hitPoint: pointAt(ray, closest.distance),
     damage,
   };
-}
-
-export function applyEnemyContactDamage(enemies: EnemyState[], player: PlayerState) {
-  if (player.isDead) {
-    return null;
-  }
-
-  for (const enemy of enemies) {
-    if (enemy.isDead || enemy.contactCooldownRemaining > 0) {
-      continue;
-    }
-
-    const distance = Math.hypot(
-      enemy.position.x - player.position.x,
-      enemy.position.z - player.position.z,
-    );
-
-    if (distance > enemy.contactRange) {
-      continue;
-    }
-
-    enemy.contactCooldownRemaining = 1.2;
-    damagePlayer(player, enemy.contactDamage);
-    return enemy;
-  }
-
-  return null;
 }
 
 function findClosestEnemyHit(enemies: EnemyState[], ray: Ray, maxDistance: number) {

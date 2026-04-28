@@ -13,6 +13,7 @@ type DebugPanelState = {
   zoneName: string;
   checkpointName: string;
   aliveEnemies: number;
+  enemyAi: string;
   ammo: string;
 };
 
@@ -47,6 +48,7 @@ export function createDebugPanel(parent: HTMLElement) {
       `Zone: ${state.zoneName}`,
       `Checkpoint: ${state.checkpointName}`,
       `Enemies: ${state.aliveEnemies}`,
+      `AI: ${state.enemyAi}`,
       `Ammo: ${state.ammo}`,
       `Player: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
       "1-4: skip zones",

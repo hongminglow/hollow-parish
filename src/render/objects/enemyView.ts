@@ -7,6 +7,7 @@ type EnemyVisual = {
   body: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   healthFill: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  warning: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 };
 
 const enemyColors: Record<EnemyState["kind"], number> = {
@@ -71,6 +72,14 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
     new THREE.BoxGeometry(0.86 * scale, 0.05, 0.055),
     new THREE.MeshBasicMaterial({ color: 0xb54f3c }),
   );
+  const warning = new THREE.Mesh(
+    new THREE.TorusGeometry(enemy.attackRange, 0.035, 6, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0xd75a3a,
+      transparent: true,
+      opacity: 0.78,
+    }),
+  );
 
   group.name = enemy.id;
   group.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
@@ -78,9 +87,12 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   head.position.y = 1.1 * scale;
   healthBack.position.y = 1.7 * scale;
   healthFill.position.set(0, 1.7 * scale, 0.03);
+  warning.rotation.x = Math.PI / 2;
+  warning.position.y = 0.04;
+  warning.visible = false;
   body.castShadow = true;
   head.castShadow = true;
-  group.add(body, head, healthBack, healthFill);
+  group.add(warning, body, head, healthBack, healthFill);
 
   return {
     enemy,
@@ -88,21 +100,44 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
     body,
     head,
     healthFill,
+    warning,
   };
 }
 
 function syncEnemyVisual(visual: EnemyVisual) {
-  const { enemy, group, body, head, healthFill } = visual;
+  const { enemy, group, body, head, healthFill, warning } = visual;
   const healthRatio = enemy.maxHealth > 0 ? enemy.health / enemy.maxHealth : 0;
-  const hitColor = enemy.hitFlashRemaining > 0 ? 0xded4b4 : enemyColors[enemy.kind];
+  const bodyColor = getBodyColor(enemy);
 
   group.visible = !enemy.isDead;
   group.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
-  group.rotation.y += enemy.kind === "boss" ? 0.004 : 0.007;
-  body.material.color.setHex(hitColor);
+  group.rotation.y += enemy.state === "idle" ? 0.002 : enemy.kind === "boss" ? 0.004 : 0.007;
+  body.material.color.setHex(bodyColor);
   head.material.color.setHex(enemy.hitFlashRemaining > 0 ? 0xffffff : 0xb9b08e);
   healthFill.scale.x = Math.max(0.001, healthRatio);
   healthFill.position.x = -0.43 * (1 - healthRatio);
+  warning.visible = enemy.state === "attackWindup" || enemy.state === "attackActive";
+  warning.material.opacity = enemy.state === "attackWindup" ? 0.78 : 0.42;
+}
+
+function getBodyColor(enemy: EnemyState) {
+  if (enemy.hitFlashRemaining > 0) {
+    return 0xded4b4;
+  }
+
+  if (enemy.state === "attackWindup" || enemy.state === "attackActive") {
+    return 0xb54f3c;
+  }
+
+  if (enemy.state === "staggered") {
+    return 0xd7a647;
+  }
+
+  if (enemy.state === "alert" || enemy.state === "chase") {
+    return 0x9a7d48;
+  }
+
+  return enemyColors[enemy.kind];
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {
