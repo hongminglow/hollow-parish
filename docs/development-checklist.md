@@ -239,48 +239,48 @@ Goal: make basic aiming, shooting, damage, ammo, reload, and death work.
 
 ### Weapon Simulation
 
-- [ ] Add weapon data model.
-- [ ] Add handgun weapon config.
-- [ ] Add magazine ammo count.
-- [ ] Add reserve ammo count.
-- [ ] Add fire cooldown.
-- [ ] Add reload state.
-- [ ] Add reload timer.
-- [ ] Add cannot-fire-without-ammo rule.
-- [ ] Add cannot-fire-while-reloading rule.
-- [ ] Add ammo reserve cap.
+- [x] Add weapon data model.
+- [x] Add handgun weapon config.
+- [x] Add magazine ammo count.
+- [x] Add reserve ammo count.
+- [x] Add fire cooldown.
+- [x] Add reload state.
+- [x] Add reload timer.
+- [x] Add cannot-fire-without-ammo rule.
+- [x] Add cannot-fire-while-reloading rule.
+- [x] Add ammo reserve cap.
 
 ### Shooting
 
-- [ ] Add aim requirement for firing.
-- [ ] Add hitscan raycast from camera center.
-- [ ] Add bullet target collision layer.
-- [ ] Add body hit result.
-- [ ] Add head hit result.
-- [ ] Add miss result.
-- [ ] Add muzzle flash placeholder.
-- [ ] Add hit spark placeholder.
-- [ ] Add screen feedback for shot.
-- [ ] Add debug raycast display.
+- [x] Add aim requirement for firing.
+- [x] Add hitscan raycast from camera center.
+- [x] Add bullet target collision layer.
+- [x] Add body hit result.
+- [x] Add head hit result.
+- [x] Add miss result.
+- [x] Add muzzle flash placeholder.
+- [x] Add hit spark placeholder.
+- [x] Add screen feedback for shot.
+- [x] Add debug raycast display.
 
 ### Enemy Damage
 
-- [ ] Add enemy health.
-- [ ] Apply handgun damage.
-- [ ] Apply headshot multiplier.
-- [ ] Apply stagger chance.
-- [ ] Add death state.
-- [ ] Prevent dead enemies from taking repeated combat actions.
-- [ ] Add simple death visual.
+- [x] Add enemy health.
+- [x] Apply handgun damage.
+- [x] Apply headshot multiplier.
+- [x] Apply stagger chance.
+- [x] Add death state.
+- [x] Prevent dead enemies from taking repeated combat actions.
+- [x] Add simple death visual.
 
 ### Player Damage And Death
 
-- [ ] Add player damage event.
-- [ ] Add invulnerability window after hit.
-- [ ] Add health HUD update.
-- [ ] Add player death state.
-- [ ] Add death overlay.
-- [ ] Add restart from checkpoint action.
+- [x] Add player damage event.
+- [x] Add invulnerability window after hit.
+- [x] Add health HUD update.
+- [x] Add player death state.
+- [x] Add death overlay.
+- [x] Add restart from checkpoint action.
 
 ### Phase 3 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually walk Phase 2 from road to bell tower in browser, then start Phase 3 combat prototype.
+- [ ] Visually playtest Phase 3 combat in browser, then start Phase 4 enemy AI.

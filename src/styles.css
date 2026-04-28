@@ -60,6 +60,7 @@ button {
 .objective-chip,
 .status-strip,
 .prompt,
+.combat-message,
 .debug-panel,
 .error-panel {
   border: 1px solid var(--hud-border);
@@ -160,6 +161,27 @@ button {
   opacity: 1;
 }
 
+.combat-message {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  min-width: 180px;
+  padding: 9px 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  color: #f7dfb6;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.combat-message.is-visible {
+  opacity: 1;
+}
+
 .debug-panel {
   position: absolute;
   right: 20px;
@@ -189,6 +211,58 @@ button {
   transition:
     opacity 160ms ease,
     visibility 160ms ease;
+}
+
+.death-overlay {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(124, 28, 20, 0.24), transparent 22rem),
+    rgba(5, 7, 7, 0.72);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+.death-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.death-card {
+  width: min(480px, calc(100vw - 40px));
+  padding: 30px;
+  border: 1px solid rgba(189, 76, 50, 0.58);
+  border-radius: 18px;
+  background: rgba(12, 9, 8, 0.9);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.death-kicker {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.death-title {
+  margin: 8px 0 0;
+  color: var(--hud-text);
+  font-size: clamp(26px, 5vw, 40px);
+  line-height: 1.05;
+}
+
+.death-copy {
+  margin: 12px 0 0;
+  color: var(--hud-muted);
+  line-height: 1.6;
 }
 
 .pause-overlay.is-visible {

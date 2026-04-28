@@ -26,6 +26,7 @@ export type PlayerState = {
   velocity: Vec3;
   yaw: number;
   health: number;
+  invulnerabilityRemaining: number;
   isAiming: boolean;
   isSprinting: boolean;
   isDead: boolean;
@@ -45,6 +46,7 @@ export function createPlayerState(spawnPosition: Vec3): PlayerState {
     velocity: { x: 0, y: 0, z: 0 },
     yaw: 0,
     health: 100,
+    invulnerabilityRemaining: 0,
     isAiming: false,
     isSprinting: false,
     isDead: false,
@@ -54,6 +56,14 @@ export function createPlayerState(spawnPosition: Vec3): PlayerState {
 }
 
 export function updatePlayerMoveIntent(player: PlayerState, intent: PlayerMoveIntent): Vec3 {
+  if (player.isDead) {
+    player.velocity = { x: 0, y: 0, z: 0 };
+    player.isAiming = false;
+    player.isSprinting = false;
+    player.movementState = "idle";
+    return { x: 0, y: 0, z: 0 };
+  }
+
   const hasMoveInput = intent.movementAxis.x !== 0 || intent.movementAxis.z !== 0;
   const canSprint = intent.isSprinting && hasMoveInput && !intent.isAiming;
   const speed = intent.isAiming ? aimSpeed : canSprint ? sprintSpeed : walkSpeed;
@@ -105,6 +115,28 @@ export function syncPlayerPhysics(player: PlayerState, result: PlayerPhysicsResu
   }
 }
 
+export function updatePlayerTimers(player: PlayerState, deltaSeconds: number) {
+  player.invulnerabilityRemaining = Math.max(0, player.invulnerabilityRemaining - deltaSeconds);
+}
+
+export function damagePlayer(player: PlayerState, damage: number) {
+  if (player.isDead || player.invulnerabilityRemaining > 0) {
+    return false;
+  }
+
+  player.health = Math.max(0, player.health - damage);
+  player.invulnerabilityRemaining = 0.8;
+
+  if (player.health === 0) {
+    player.isDead = true;
+    player.isAiming = false;
+    player.isSprinting = false;
+    player.movementState = "idle";
+  }
+
+  return true;
+}
+
 export function respawnPlayer(player: PlayerState) {
   placePlayerAt(player, player.spawnPosition);
 }
@@ -117,6 +149,7 @@ export function placePlayerAt(player: PlayerState, position: Vec3) {
   player.position = { ...position };
   player.velocity = { x: 0, y: 0, z: 0 };
   player.health = 100;
+  player.invulnerabilityRemaining = 0;
   player.isDead = false;
   player.isGrounded = false;
   player.isAiming = false;

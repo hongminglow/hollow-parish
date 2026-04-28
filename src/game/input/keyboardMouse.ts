@@ -36,6 +36,7 @@ const keyActionMap = new Map<string, GameAction>([
   ["KeyH", "heal"],
   ["Tab", "inventory"],
   ["Escape", "pause"],
+  ["Space", "restart"],
   ["F3", "toggleDebug"],
   ["Digit1", "skipRoad"],
   ["Digit2", "skipMill"],
@@ -96,6 +97,7 @@ export function createKeyboardMouseInput(canvas: HTMLCanvasElement) {
     if (
       action === "inventory" ||
       action === "pause" ||
+      action === "restart" ||
       action === "toggleDebug" ||
       action.startsWith("skip")
     ) {

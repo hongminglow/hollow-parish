@@ -12,6 +12,8 @@ type DebugPanelState = {
   pointerLocked: boolean;
   zoneName: string;
   checkpointName: string;
+  aliveEnemies: number;
+  ammo: string;
 };
 
 export function createDebugPanel(parent: HTMLElement) {
@@ -44,6 +46,8 @@ export function createDebugPanel(parent: HTMLElement) {
       `Sprint: ${state.sprinting ? "yes" : "no"}`,
       `Zone: ${state.zoneName}`,
       `Checkpoint: ${state.checkpointName}`,
+      `Enemies: ${state.aliveEnemies}`,
+      `Ammo: ${state.ammo}`,
       `Player: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
       "1-4: skip zones",
       "F3: debug",

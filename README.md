@@ -48,19 +48,19 @@ The visual direction is low-poly gothic rural horror: cold moonlight, warm lante
 
 ## Controls Target
 
-| Action         | Input                   |
-| -------------- | ----------------------- |
-| Move           | WASD                    |
-| Look           | Mouse                   |
-| Sprint         | Shift                   |
-| Aim            | Right mouse             |
-| Shoot          | Left mouse while aiming |
-| Reload         | R                       |
-| Interact       | E                       |
-| Heal           | H                       |
-| Inventory      | Tab                     |
-| Pause          | Esc                     |
-| Dodge or shove | Space                   |
+| Action        | Input                   |
+| ------------- | ----------------------- |
+| Move          | WASD                    |
+| Look          | Mouse                   |
+| Sprint        | Shift                   |
+| Aim           | Right mouse             |
+| Shoot         | Left mouse while aiming |
+| Reload        | R                       |
+| Interact      | E                       |
+| Heal          | H                       |
+| Inventory     | Tab                     |
+| Pause         | Esc                     |
+| Restart death | Space                   |
 
 ## Technical Direction
 
@@ -145,8 +145,8 @@ src/
 
 ## Current Status
 
-Phase 0, Phase 1, and the Phase 2 graybox implementation are in place. The project now has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, and one connected map route from Abandoned Road to Bell Tower Courtyard.
+Phase 0 through Phase 3 implementation is in place. The project now has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, and checkpoint restart.
 
 Next task:
 
-- Visually walk Phase 2 in a browser, then continue into Phase 3 combat prototype.
+- Visually playtest Phase 3 combat in a browser, then continue into Phase 4 enemy AI.

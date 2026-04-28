@@ -11,6 +11,7 @@ export const gameActions = [
   "heal",
   "inventory",
   "pause",
+  "restart",
   "toggleDebug",
   "skipRoad",
   "skipMill",

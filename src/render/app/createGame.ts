@@ -1,11 +1,15 @@
+import * as THREE from "three";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
+import { applyEnemyContactDamage, resolveHitscanShot } from "../../game/simulation/combat";
+import { createEnemies, resetEnemies, updateEnemies } from "../../game/simulation/enemies";
 import {
   createPlayerState,
   placePlayerAt,
   respawnPlayer,
   setPlayerSpawn,
   syncPlayerPhysics,
+  updatePlayerTimers,
   updatePlayerMoveIntent,
 } from "../../game/simulation/player";
 import {
@@ -14,9 +18,18 @@ import {
   getZoneByIndex,
   updateProgression,
 } from "../../game/simulation/progression";
+import {
+  createWeaponState,
+  getAmmoText,
+  tryFireWeapon,
+  tryStartReload,
+  updateWeapon,
+} from "../../game/simulation/weapon";
 import { createDebugPanel } from "../../diagnostics/createDebugPanel";
 import { createPhysicsWorld } from "../../physics/world";
+import { createCombatFeedback } from "../effects/combatFeedback";
 import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
+import { createEnemyView } from "../objects/enemyView";
 import { createMapBlockoutView } from "../objects/mapBlockoutView";
 import { createPlayerView } from "../objects/playerView";
 import { createHud } from "../../ui/hud/createHud";
@@ -37,12 +50,16 @@ export async function createGame(root: HTMLElement) {
   shell.append(renderer.domElement);
 
   const player = createPlayerState(mapBlockout.initialSpawn);
+  const weapon = createWeaponState();
+  const enemies = createEnemies();
   const progression = createProgressionState();
   const physics = await createPhysicsWorld(player.spawnPosition, mapBlockout.staticColliders);
   const scene = createScene();
   const camera = createCamera();
   const mapView = createMapBlockoutView(scene);
+  const enemyView = createEnemyView(scene, enemies);
   const playerView = createPlayerView(scene);
+  const combatFeedback = createCombatFeedback(scene);
   const cameraController = createThirdPersonCamera(camera);
   const input = createKeyboardMouseInput(renderer.domElement);
   const hud = createHud(shell);
@@ -55,6 +72,8 @@ export async function createGame(root: HTMLElement) {
   let elapsed = 0;
   let isPaused = false;
   let frameInput: InputFrame = input.consumeFrame();
+  let combatMessage = "";
+  let combatMessageRemaining = 0;
 
   function resize() {
     const width = Math.max(1, shell.clientWidth);
@@ -87,6 +106,9 @@ export async function createGame(root: HTMLElement) {
   }
 
   function fixedUpdate(deltaSeconds: number, inputState: InputFrame) {
+    updatePlayerTimers(player, deltaSeconds);
+    updateEnemies(enemies, deltaSeconds);
+
     const desiredTranslation = updatePlayerMoveIntent(player, {
       movementAxis: inputState.movementAxis(),
       cameraYaw: cameraController.getYaw(),
@@ -99,6 +121,12 @@ export async function createGame(root: HTMLElement) {
     syncPlayerPhysics(player, physicsResult);
     updateProgression(progression, player.position);
     setPlayerSpawn(player, progression.currentCheckpoint.position);
+
+    const contactEnemy = applyEnemyContactDamage(enemies, player);
+
+    if (contactEnemy) {
+      showCombatMessage(`${contactEnemy.label} hit you`);
+    }
   }
 
   function skipToZone(index: number) {
@@ -112,6 +140,92 @@ export async function createGame(root: HTMLElement) {
     physics.resetPlayer(checkpoint.position);
   }
 
+  function restartFromCheckpoint() {
+    respawnPlayer(player);
+    physics.resetPlayer(player.spawnPosition);
+    resetEnemies(enemies);
+  }
+
+  function showCombatMessage(message: string, duration = 1.1) {
+    combatMessage = message;
+    combatMessageRemaining = duration;
+  }
+
+  function updateCombatMessage(deltaSeconds: number) {
+    combatMessageRemaining = Math.max(0, combatMessageRemaining - deltaSeconds);
+
+    if (combatMessageRemaining === 0) {
+      combatMessage = "";
+    }
+  }
+
+  function getCameraRay() {
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+
+    return {
+      origin: {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      },
+      direction: {
+        x: direction.x,
+        y: direction.y,
+        z: direction.z,
+      },
+    };
+  }
+
+  function handleShoot() {
+    const attempt = tryFireWeapon(weapon, player.isAiming);
+
+    if (!attempt.fired) {
+      if (attempt.reason === "empty") {
+        showCombatMessage("Empty");
+      }
+
+      if (attempt.reason === "reloading") {
+        showCombatMessage("Reloading");
+      }
+
+      if (attempt.reason === "not-aiming") {
+        showCombatMessage("Aim first");
+      }
+
+      return;
+    }
+
+    const ray = getCameraRay();
+    const wallDistance = physics.castCameraRay(ray.origin, ray.direction, weapon.config.range);
+    const result = resolveHitscanShot(weapon, enemies, ray, wallDistance);
+
+    combatFeedback.spawnMuzzleFlash(ray.origin, ray.direction);
+    combatFeedback.spawnShot(
+      ray.origin,
+      result.hitPoint,
+      result.type === "hit" ? 0xd7a647 : 0x8f9ba2,
+    );
+
+    if (result.type === "hit") {
+      combatFeedback.spawnHit(result.hitPoint, result.hitPart === "head" ? 0xfff1c4 : 0xd45c3f);
+      showCombatMessage(
+        result.enemy.isDead
+          ? `${result.enemy.label} down`
+          : `${result.hitPart.toUpperCase()} ${result.damage}`,
+      );
+      return;
+    }
+
+    if (result.type === "blocked") {
+      combatFeedback.spawnHit(result.hitPoint, 0x8f9ba2);
+      showCombatMessage("Blocked");
+      return;
+    }
+
+    showCombatMessage("Miss");
+  }
+
   function render(time: number) {
     const deltaSeconds = Math.min(0.1, (time - previousTime) / 1000);
     previousTime = time;
@@ -119,6 +233,11 @@ export async function createGame(root: HTMLElement) {
 
     if (frameInput.wasPressed("pause")) {
       setPaused(!isPaused);
+    }
+
+    if (player.isDead && frameInput.wasPressed("restart")) {
+      restartFromCheckpoint();
+      showCombatMessage("Checkpoint restored");
     }
 
     if (frameInput.wasPressed("toggleDebug")) {
@@ -146,6 +265,9 @@ export async function createGame(root: HTMLElement) {
     }
 
     if (!isPaused) {
+      updateWeapon(weapon, deltaSeconds);
+      updateCombatMessage(deltaSeconds);
+
       accumulator = Math.min(maxAccumulatedTime, accumulator + deltaSeconds);
 
       while (accumulator >= fixedStep) {
@@ -153,6 +275,10 @@ export async function createGame(root: HTMLElement) {
         accumulator -= fixedStep;
         elapsed += fixedStep;
       }
+    }
+
+    if (!isPaused && !player.isDead && frameInput.wasPressed("reload")) {
+      showCombatMessage(tryStartReload(weapon) ? "Reloading" : "Cannot reload");
     }
 
     if (player.position.y < -6) {
@@ -167,14 +293,22 @@ export async function createGame(root: HTMLElement) {
       physics,
     });
     playerView.sync(player);
+    enemyView.sync();
+    combatFeedback.update(deltaSeconds);
+
+    if (!isPaused && !player.isDead && frameInput.wasPressed("shoot")) {
+      handleShoot();
+    }
 
     hud.update({
       health: player.health,
-      ammo: "12 / 36",
+      ammo: getAmmoText(weapon),
       objective: `${progression.currentZone.name}: ${progression.currentZone.objective}`,
       prompt: frameInput.pointerLocked
-        ? "1-4 skip zones | Right mouse aim | Shift sprint | Esc pause | F3 debug"
+        ? "Aim + left click fire | R reload | Stand near enemies to test damage"
         : "Click the canvas to lock pointer. Follow the route from road to bell tower.",
+      message: combatMessage,
+      isDead: player.isDead,
     });
     hud.setReticleVisible(player.isAiming);
 
@@ -189,6 +323,8 @@ export async function createGame(root: HTMLElement) {
       pointerLocked: frameInput.pointerLocked,
       zoneName: progression.currentZone.name,
       checkpointName: progression.currentCheckpoint.name,
+      aliveEnemies: enemies.filter((enemy) => !enemy.isDead).length,
+      ammo: getAmmoText(weapon),
     });
 
     renderer.render(scene, camera);
@@ -213,7 +349,9 @@ export async function createGame(root: HTMLElement) {
     renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
     playerView.dispose();
+    enemyView.dispose();
     mapView.dispose();
+    combatFeedback.dispose();
     physics.dispose();
     renderer.dispose();
     shell.remove();
