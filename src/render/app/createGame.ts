@@ -1,4 +1,15 @@
+import { phaseOneStaticColliders } from "../../game/content/phaseOneTestMap";
+import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
+import {
+  createPlayerState,
+  respawnPlayer,
+  syncPlayerPhysics,
+  updatePlayerMoveIntent,
+} from "../../game/simulation/player";
 import { createDebugPanel } from "../../diagnostics/createDebugPanel";
+import { createPhysicsWorld } from "../../physics/world";
+import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
+import { createPlayerView } from "../objects/playerView";
 import { createHud } from "../../ui/hud/createHud";
 import { createRuntimeErrorPanel } from "../../ui/overlays/createRuntimeErrorPanel";
 import { createCamera } from "./createCamera";
@@ -9,7 +20,7 @@ import { createTestWorld } from "./createTestWorld";
 const fixedStep = 1 / 60;
 const maxAccumulatedTime = fixedStep * 5;
 
-export function createGame(root: HTMLElement) {
+export async function createGame(root: HTMLElement) {
   const shell = document.createElement("div");
   shell.className = "game-shell";
   root.append(shell);
@@ -17,9 +28,14 @@ export function createGame(root: HTMLElement) {
   const renderer = createRenderer();
   shell.append(renderer.domElement);
 
+  const player = createPlayerState();
+  const physics = await createPhysicsWorld(player.spawnPosition, phaseOneStaticColliders);
   const scene = createScene();
   const camera = createCamera();
   const world = createTestWorld(scene);
+  const playerView = createPlayerView(scene);
+  const cameraController = createThirdPersonCamera(camera);
+  const input = createKeyboardMouseInput(renderer.domElement);
   const hud = createHud(shell);
   const debugPanel = createDebugPanel(shell);
   const errorPanel = createRuntimeErrorPanel(shell);
@@ -29,6 +45,7 @@ export function createGame(root: HTMLElement) {
   let accumulator = 0;
   let elapsed = 0;
   let isPaused = false;
+  let frameInput: InputFrame = input.consumeFrame();
 
   function resize() {
     const width = Math.max(1, shell.clientWidth);
@@ -50,20 +67,6 @@ export function createGame(root: HTMLElement) {
     }
   }
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.code === "Escape") {
-      setPaused(!isPaused);
-    }
-
-    if (event.code === "F3") {
-      debugPanel.toggle();
-    }
-
-    if (event.code === "MouseRight") {
-      hud.setReticleVisible(true);
-    }
-  }
-
   function handleContextLost(event: Event) {
     event.preventDefault();
     errorPanel.show("WebGL context was lost. Refresh the page if rendering does not recover.");
@@ -74,39 +77,78 @@ export function createGame(root: HTMLElement) {
     resize();
   }
 
-  function fixedUpdate(deltaSeconds: number) {
-    world.update(deltaSeconds, isPaused);
+  function fixedUpdate(deltaSeconds: number, inputState: InputFrame) {
+    const desiredTranslation = updatePlayerMoveIntent(player, {
+      movementAxis: inputState.movementAxis(),
+      cameraYaw: cameraController.getYaw(),
+      isAiming: inputState.isHeld("aim"),
+      isSprinting: inputState.isHeld("sprint"),
+      deltaSeconds,
+    });
+    const physicsResult = physics.movePlayer(desiredTranslation, deltaSeconds);
+
+    syncPlayerPhysics(player, physicsResult);
   }
 
   function render(time: number) {
     const deltaSeconds = Math.min(0.1, (time - previousTime) / 1000);
     previousTime = time;
+    frameInput = input.consumeFrame();
+
+    if (frameInput.wasPressed("pause")) {
+      setPaused(!isPaused);
+    }
+
+    if (frameInput.wasPressed("toggleDebug")) {
+      debugPanel.toggle();
+    }
+
+    if (!isPaused) {
+      cameraController.applyLook(frameInput.mouseDelta);
+    }
 
     if (!isPaused) {
       accumulator = Math.min(maxAccumulatedTime, accumulator + deltaSeconds);
 
       while (accumulator >= fixedStep) {
-        fixedUpdate(fixedStep);
+        fixedUpdate(fixedStep, frameInput);
         accumulator -= fixedStep;
         elapsed += fixedStep;
       }
     }
 
-    const playerPosition = world.getPlayerPosition();
-    camera.position.set(playerPosition.x + 5, playerPosition.y + 3.2, playerPosition.z + 7);
-    camera.lookAt(playerPosition.x, playerPosition.y + 0.8, playerPosition.z);
+    if (player.position.y < -6) {
+      respawnPlayer(player);
+      physics.resetPlayer(player.spawnPosition);
+    }
+
+    cameraController.update({
+      target: player.position,
+      isAiming: player.isAiming,
+      deltaSeconds,
+      physics,
+    });
+    playerView.sync(player);
 
     hud.update({
-      health: 100,
+      health: player.health,
       ammo: "12 / 36",
-      objective: "Phase 0: verify renderer, HUD, diagnostics, and shell.",
+      objective: "Phase 1: move with WASD, sprint with Shift, aim with right mouse.",
+      prompt: frameInput.pointerLocked
+        ? "Right mouse: aim | Shift: sprint | Esc: pause | F3: debug"
+        : "Click the canvas to lock pointer and start camera control.",
     });
+    hud.setReticleVisible(player.isAiming);
 
     debugPanel.update({
       fps: deltaSeconds > 0 ? 1 / deltaSeconds : 0,
-      playerPosition,
+      playerPosition: player.position,
       elapsed,
       paused: isPaused,
+      grounded: player.isGrounded,
+      aiming: player.isAiming,
+      sprinting: player.isSprinting,
+      pointerLocked: frameInput.pointerLocked,
     });
 
     renderer.render(scene, camera);
@@ -115,9 +157,9 @@ export function createGame(root: HTMLElement) {
 
   function start() {
     resize();
+    input.start();
     window.addEventListener("resize", resize);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("keydown", handleKeyDown);
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
     animationFrame = requestAnimationFrame(render);
@@ -125,11 +167,14 @@ export function createGame(root: HTMLElement) {
 
   function dispose() {
     cancelAnimationFrame(animationFrame);
+    input.stop();
     window.removeEventListener("resize", resize);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
-    window.removeEventListener("keydown", handleKeyDown);
     renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
+    playerView.dispose();
+    world.dispose();
+    physics.dispose();
     renderer.dispose();
     shell.remove();
   }

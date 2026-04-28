@@ -1,11 +1,15 @@
-import type * as THREE from "three";
+import type { Vec3 } from "../game/simulation/player";
 import { debugFlags } from "./debugFlags";
 
 type DebugPanelState = {
   fps: number;
-  playerPosition: THREE.Vector3;
+  playerPosition: Vec3;
   elapsed: number;
   paused: boolean;
+  grounded: boolean;
+  aiming: boolean;
+  sprinting: boolean;
+  pointerLocked: boolean;
 };
 
 export function createDebugPanel(parent: HTMLElement) {
@@ -32,6 +36,10 @@ export function createDebugPanel(parent: HTMLElement) {
       `FPS: ${Math.round(state.fps)}`,
       `Time: ${state.elapsed.toFixed(1)}s`,
       `Paused: ${state.paused ? "yes" : "no"}`,
+      `Pointer: ${state.pointerLocked ? "locked" : "free"}`,
+      `Grounded: ${state.grounded ? "yes" : "no"}`,
+      `Aiming: ${state.aiming ? "yes" : "no"}`,
+      `Sprint: ${state.sprinting ? "yes" : "no"}`,
       `Player: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
       "F3: debug",
       "Esc: pause",

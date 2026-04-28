@@ -2,6 +2,7 @@ type HudState = {
   objective: string;
   health: number;
   ammo: string;
+  prompt: string;
 };
 
 export function createHud(parent: HTMLElement) {
@@ -22,12 +23,12 @@ export function createHud(parent: HTMLElement) {
         <div class="hud-value" data-hud-ammo></div>
       </div>
     </section>
-    <div class="prompt">Phase 0 shell online. Movement and camera arrive in Phase 1.</div>
+    <div class="prompt" data-hud-prompt></div>
     <div class="reticle" data-hud-reticle aria-hidden="true"></div>
     <section class="pause-overlay" data-hud-pause>
       <div class="pause-card">
         <h1 class="pause-title">Paused</h1>
-        <p class="pause-copy">Phase 0 has the runtime shell, HUD, diagnostics, and placeholder scene.</p>
+        <p class="pause-copy">Phase 1 has input, movement, Rapier collision, and the third-person camera online.</p>
       </div>
     </section>
   `;
@@ -38,11 +39,13 @@ export function createHud(parent: HTMLElement) {
   const ammo = requireElement(hud, "[data-hud-ammo]");
   const pause = requireElement(hud, "[data-hud-pause]");
   const reticle = requireElement(hud, "[data-hud-reticle]");
+  const prompt = requireElement(hud, "[data-hud-prompt]");
 
   function update(state: HudState) {
     objective.textContent = state.objective;
     health.textContent = `${state.health}%`;
     ammo.textContent = state.ammo;
+    prompt.textContent = state.prompt;
   }
 
   return {

@@ -1,99 +1,43 @@
 import * as THREE from "three";
+import { phaseOneStaticColliders } from "../../game/content/phaseOneTestMap";
 
 export function createTestWorld(scene: THREE.Scene) {
-  const playerPosition = new THREE.Vector3(0, 0.9, 0);
-  const player = createPlayerPlaceholder();
-  const floor = createFloor();
-  const gate = createGatePlaceholder();
+  const staticMeshes = phaseOneStaticColliders.map(createStaticColliderMesh);
   const shrine = createShrinePlaceholder();
   const lantern = createLanternPlaceholder();
 
-  player.position.copy(playerPosition);
-  scene.add(floor, gate, shrine, lantern, player);
-
-  let rotation = 0;
+  scene.add(...staticMeshes, shrine, lantern);
 
   return {
-    update(deltaSeconds: number, isPaused: boolean) {
-      if (isPaused) {
-        return;
+    dispose() {
+      for (const mesh of staticMeshes) {
+        scene.remove(mesh);
+        mesh.geometry.dispose();
+        disposeMaterial(mesh.material);
       }
-
-      rotation += deltaSeconds * 0.7;
-      player.rotation.y = rotation;
-    },
-    getPlayerPosition() {
-      return playerPosition;
     },
   };
 }
 
-function createPlayerPlaceholder() {
-  const group = new THREE.Group();
-  group.name = "PlayerPlaceholder";
-
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.35, 0.85, 8, 16),
+function createStaticColliderMesh(collider: (typeof phaseOneStaticColliders)[number]) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      collider.halfExtents.x * 2,
+      collider.halfExtents.y * 2,
+      collider.halfExtents.z * 2,
+    ),
     new THREE.MeshStandardMaterial({
-      color: 0x5f7d72,
-      roughness: 0.78,
-      metalness: 0.05,
+      color: collider.color,
+      roughness: 0.9,
     }),
   );
-  body.castShadow = true;
 
-  const shoulder = new THREE.Mesh(
-    new THREE.BoxGeometry(0.92, 0.22, 0.32),
-    new THREE.MeshStandardMaterial({
-      color: 0x203837,
-      roughness: 0.82,
-    }),
-  );
-  shoulder.position.set(0, 0.34, 0.03);
-  shoulder.castShadow = true;
+  mesh.name = collider.name;
+  mesh.position.set(collider.position.x, collider.position.y, collider.position.z);
+  mesh.castShadow = collider.name !== "TrainingFloor";
+  mesh.receiveShadow = true;
 
-  group.add(body, shoulder);
-  return group;
-}
-
-function createFloor() {
-  const floor = new THREE.Mesh(
-    new THREE.BoxGeometry(20, 0.24, 20),
-    new THREE.MeshStandardMaterial({
-      color: 0x27302a,
-      roughness: 0.92,
-    }),
-  );
-  floor.name = "Phase0TestFloor";
-  floor.position.y = -0.12;
-  floor.receiveShadow = true;
-  return floor;
-}
-
-function createGatePlaceholder() {
-  const group = new THREE.Group();
-  group.name = "VillageGatePlaceholder";
-  group.position.set(0, 1.25, -5.4);
-
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x3a2517,
-    roughness: 0.86,
-  });
-
-  const leftPost = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.5, 0.3), material);
-  const rightPost = leftPost.clone();
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.26, 0.34), material);
-
-  leftPost.position.x = -2.2;
-  rightPost.position.x = 2.2;
-  beam.position.y = 1.08;
-
-  leftPost.castShadow = true;
-  rightPost.castShadow = true;
-  beam.castShadow = true;
-  group.add(leftPost, rightPost, beam);
-
-  return group;
+  return mesh;
 }
 
 function createShrinePlaceholder() {
@@ -125,4 +69,16 @@ function createLanternPlaceholder() {
   lantern.position.set(3.5, 1.1, -2.5);
   lantern.castShadow = true;
   return lantern;
+}
+
+function disposeMaterial(material: THREE.Material | THREE.Material[]) {
+  if (Array.isArray(material)) {
+    for (const item of material) {
+      item.dispose();
+    }
+
+    return;
+  }
+
+  material.dispose();
 }

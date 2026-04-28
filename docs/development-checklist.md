@@ -87,59 +87,59 @@ Goal: make movement and the third-person camera feel usable before building comb
 
 ### Input System
 
-- [ ] Define action names.
-- [ ] Map keyboard and mouse inputs to actions.
-- [ ] Track pressed, held, and released action states.
-- [ ] Add pointer lock request.
-- [ ] Add pointer lock release handling.
-- [ ] Add mouse delta collection.
-- [ ] Pause input when menus are open.
-- [ ] Prevent browser scroll or context menu where needed.
+- [x] Define action names.
+- [x] Map keyboard and mouse inputs to actions.
+- [x] Track pressed, held, and released action states.
+- [x] Add pointer lock request.
+- [x] Add pointer lock release handling.
+- [x] Add mouse delta collection.
+- [x] Pause input when menus are open.
+- [x] Prevent browser scroll or context menu where needed.
 
 ### Player Simulation
 
-- [ ] Create player simulation state.
-- [ ] Add player health.
-- [ ] Add player movement velocity.
-- [ ] Add player yaw.
-- [ ] Add player aim state.
-- [ ] Add player sprint state.
-- [ ] Add player dead state.
-- [ ] Add movement speed values.
-- [ ] Add aim movement slowdown.
-- [ ] Add sprint movement speed.
+- [x] Create player simulation state.
+- [x] Add player health.
+- [x] Add player movement velocity.
+- [x] Add player yaw.
+- [x] Add player aim state.
+- [x] Add player sprint state.
+- [x] Add player dead state.
+- [x] Add movement speed values.
+- [x] Add aim movement slowdown.
+- [x] Add sprint movement speed.
 
 ### Player Physics
 
-- [ ] Create Rapier world.
-- [ ] Add player capsule collider.
-- [ ] Add gravity.
-- [ ] Add ground detection.
-- [ ] Add character movement integration.
-- [ ] Prevent player from passing through static colliders.
-- [ ] Add player spawn position.
-- [ ] Add respawn position support.
+- [x] Create Rapier world.
+- [x] Add player capsule collider.
+- [x] Add gravity.
+- [x] Add ground detection.
+- [x] Add character movement integration.
+- [x] Prevent player from passing through static colliders.
+- [x] Add player spawn position.
+- [x] Add respawn position support.
 
 ### Third-Person Camera
 
-- [ ] Add camera yaw and pitch state.
-- [ ] Clamp camera pitch.
-- [ ] Add smooth follow camera.
-- [ ] Add default third-person camera distance.
-- [ ] Add aim camera offset.
-- [ ] Add aim FOV transition.
-- [ ] Add camera-relative movement.
-- [ ] Add camera collision raycast.
-- [ ] Hide reticle outside aim mode.
-- [ ] Show reticle during aim mode.
+- [x] Add camera yaw and pitch state.
+- [x] Clamp camera pitch.
+- [x] Add smooth follow camera.
+- [x] Add default third-person camera distance.
+- [x] Add aim camera offset.
+- [x] Add aim FOV transition.
+- [x] Add camera-relative movement.
+- [x] Add camera collision raycast.
+- [x] Hide reticle outside aim mode.
+- [x] Show reticle during aim mode.
 
 ### Player Rendering
 
-- [ ] Sync player view from simulation state.
-- [ ] Rotate player toward movement direction.
-- [ ] Rotate player toward camera direction while aiming.
-- [ ] Add placeholder walk/run visual feedback.
-- [ ] Add placeholder aim pose feedback.
+- [x] Sync player view from simulation state.
+- [x] Rotate player toward movement direction.
+- [x] Rotate player toward camera direction while aiming.
+- [x] Add placeholder walk/run visual feedback.
+- [x] Add placeholder aim pose feedback.
 
 ### Phase 1 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually verify Phase 0 in a browser, then start Phase 1 input/player/camera work.
+- [ ] Visually verify Phase 1 movement, aiming, collision, HUD, and console health in a browser, then start Phase 2 map blockout.

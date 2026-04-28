@@ -145,8 +145,8 @@ src/
 
 ## Current Status
 
-Planning documents are ready. Implementation has not started yet.
+Phase 0 is implemented and Phase 1 movement foundations are in progress. The project now has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, and a third-person follow/aim camera.
 
 Next task:
 
-- Scaffold the Vite, TypeScript, and Three.js project for Phase 0.
+- Visually verify Phase 1 in a browser, then continue into Phase 2 map blockout.
