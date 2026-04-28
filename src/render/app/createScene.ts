@@ -3,7 +3,7 @@ import * as THREE from "three";
 export function createScene() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x070b0c);
-  scene.fog = new THREE.FogExp2(0x0c1112, 0.034);
+  scene.fog = new THREE.FogExp2(0x0c1112, 0.018);
 
   const moonLight = new THREE.DirectionalLight(0xaec7d6, 2.4);
   moonLight.position.set(-5, 9, 4);

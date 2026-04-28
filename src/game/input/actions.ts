@@ -12,6 +12,10 @@ export const gameActions = [
   "inventory",
   "pause",
   "toggleDebug",
+  "skipRoad",
+  "skipMill",
+  "skipChapel",
+  "skipArena",
 ] as const;
 
 export type GameAction = (typeof gameActions)[number];

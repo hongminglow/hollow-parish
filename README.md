@@ -145,8 +145,8 @@ src/
 
 ## Current Status
 
-Phase 0 is implemented and Phase 1 movement foundations are in progress. The project now has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, and a third-person follow/aim camera.
+Phase 0, Phase 1, and the Phase 2 graybox implementation are in place. The project now has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, and one connected map route from Abandoned Road to Bell Tower Courtyard.
 
 Next task:
 
-- Visually verify Phase 1 in a browser, then continue into Phase 2 map blockout.
+- Visually walk Phase 2 in a browser, then continue into Phase 3 combat prototype.

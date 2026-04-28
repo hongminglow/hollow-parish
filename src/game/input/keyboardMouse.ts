@@ -37,6 +37,10 @@ const keyActionMap = new Map<string, GameAction>([
   ["Tab", "inventory"],
   ["Escape", "pause"],
   ["F3", "toggleDebug"],
+  ["Digit1", "skipRoad"],
+  ["Digit2", "skipMill"],
+  ["Digit3", "skipChapel"],
+  ["Digit4", "skipArena"],
 ]);
 
 const mouseActionMap = new Map<number, GameAction>([
@@ -89,7 +93,12 @@ export function createKeyboardMouseInput(canvas: HTMLCanvasElement) {
       return;
     }
 
-    if (action === "inventory" || action === "pause" || action === "toggleDebug") {
+    if (
+      action === "inventory" ||
+      action === "pause" ||
+      action === "toggleDebug" ||
+      action.startsWith("skip")
+    ) {
       event.preventDefault();
     }
 

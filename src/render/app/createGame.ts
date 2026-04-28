@@ -1,21 +1,29 @@
-import { phaseOneStaticColliders } from "../../game/content/phaseOneTestMap";
+import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
 import {
   createPlayerState,
+  placePlayerAt,
   respawnPlayer,
+  setPlayerSpawn,
   syncPlayerPhysics,
   updatePlayerMoveIntent,
 } from "../../game/simulation/player";
+import {
+  createProgressionState,
+  getCheckpointForZone,
+  getZoneByIndex,
+  updateProgression,
+} from "../../game/simulation/progression";
 import { createDebugPanel } from "../../diagnostics/createDebugPanel";
 import { createPhysicsWorld } from "../../physics/world";
 import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
+import { createMapBlockoutView } from "../objects/mapBlockoutView";
 import { createPlayerView } from "../objects/playerView";
 import { createHud } from "../../ui/hud/createHud";
 import { createRuntimeErrorPanel } from "../../ui/overlays/createRuntimeErrorPanel";
 import { createCamera } from "./createCamera";
 import { createRenderer } from "./createRenderer";
 import { createScene } from "./createScene";
-import { createTestWorld } from "./createTestWorld";
 
 const fixedStep = 1 / 60;
 const maxAccumulatedTime = fixedStep * 5;
@@ -28,11 +36,12 @@ export async function createGame(root: HTMLElement) {
   const renderer = createRenderer();
   shell.append(renderer.domElement);
 
-  const player = createPlayerState();
-  const physics = await createPhysicsWorld(player.spawnPosition, phaseOneStaticColliders);
+  const player = createPlayerState(mapBlockout.initialSpawn);
+  const progression = createProgressionState();
+  const physics = await createPhysicsWorld(player.spawnPosition, mapBlockout.staticColliders);
   const scene = createScene();
   const camera = createCamera();
-  const world = createTestWorld(scene);
+  const mapView = createMapBlockoutView(scene);
   const playerView = createPlayerView(scene);
   const cameraController = createThirdPersonCamera(camera);
   const input = createKeyboardMouseInput(renderer.domElement);
@@ -88,6 +97,19 @@ export async function createGame(root: HTMLElement) {
     const physicsResult = physics.movePlayer(desiredTranslation, deltaSeconds);
 
     syncPlayerPhysics(player, physicsResult);
+    updateProgression(progression, player.position);
+    setPlayerSpawn(player, progression.currentCheckpoint.position);
+  }
+
+  function skipToZone(index: number) {
+    const zone = getZoneByIndex(index);
+    const checkpoint = getCheckpointForZone(zone);
+
+    progression.currentZone = zone;
+    progression.currentCheckpoint = checkpoint;
+    setPlayerSpawn(player, checkpoint.position);
+    placePlayerAt(player, checkpoint.position);
+    physics.resetPlayer(checkpoint.position);
   }
 
   function render(time: number) {
@@ -101,6 +123,22 @@ export async function createGame(root: HTMLElement) {
 
     if (frameInput.wasPressed("toggleDebug")) {
       debugPanel.toggle();
+    }
+
+    if (frameInput.wasPressed("skipRoad")) {
+      skipToZone(0);
+    }
+
+    if (frameInput.wasPressed("skipMill")) {
+      skipToZone(1);
+    }
+
+    if (frameInput.wasPressed("skipChapel")) {
+      skipToZone(2);
+    }
+
+    if (frameInput.wasPressed("skipArena")) {
+      skipToZone(3);
     }
 
     if (!isPaused) {
@@ -133,10 +171,10 @@ export async function createGame(root: HTMLElement) {
     hud.update({
       health: player.health,
       ammo: "12 / 36",
-      objective: "Phase 1: move with WASD, sprint with Shift, aim with right mouse.",
+      objective: `${progression.currentZone.name}: ${progression.currentZone.objective}`,
       prompt: frameInput.pointerLocked
-        ? "Right mouse: aim | Shift: sprint | Esc: pause | F3: debug"
-        : "Click the canvas to lock pointer and start camera control.",
+        ? "1-4 skip zones | Right mouse aim | Shift sprint | Esc pause | F3 debug"
+        : "Click the canvas to lock pointer. Follow the route from road to bell tower.",
     });
     hud.setReticleVisible(player.isAiming);
 
@@ -149,6 +187,8 @@ export async function createGame(root: HTMLElement) {
       aiming: player.isAiming,
       sprinting: player.isSprinting,
       pointerLocked: frameInput.pointerLocked,
+      zoneName: progression.currentZone.name,
+      checkpointName: progression.currentCheckpoint.name,
     });
 
     renderer.render(scene, camera);
@@ -173,7 +213,7 @@ export async function createGame(root: HTMLElement) {
     renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
     playerView.dispose();
-    world.dispose();
+    mapView.dispose();
     physics.dispose();
     renderer.dispose();
     shell.remove();

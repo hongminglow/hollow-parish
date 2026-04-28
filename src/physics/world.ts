@@ -4,7 +4,7 @@ import RAPIER, {
   type RigidBody,
   type World,
 } from "@dimforge/rapier3d-compat";
-import type { StaticColliderSpec } from "../game/content/phaseOneTestMap";
+import type { MapBoxSpec } from "../game/content/mapBlockout";
 import type { PlayerPhysicsResult, Vec3 } from "../game/simulation/player";
 
 export class GamePhysicsWorld {
@@ -15,7 +15,7 @@ export class GamePhysicsWorld {
   constructor(
     private readonly world: World,
     spawnPosition: Vec3,
-    staticColliders: StaticColliderSpec[],
+    staticColliders: MapBoxSpec[],
   ) {
     this.world.timestep = 1 / 60;
     this.world.lengthUnit = 1;
@@ -99,10 +99,7 @@ export class GamePhysicsWorld {
   }
 }
 
-export async function createPhysicsWorld(
-  spawnPosition: Vec3,
-  staticColliders: StaticColliderSpec[],
-) {
+export async function createPhysicsWorld(spawnPosition: Vec3, staticColliders: MapBoxSpec[]) {
   await RAPIER.init();
   return new GamePhysicsWorld(
     new RAPIER.World({ x: 0, y: -9.81, z: 0 }),

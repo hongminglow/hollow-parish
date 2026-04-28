@@ -10,6 +10,8 @@ type DebugPanelState = {
   aiming: boolean;
   sprinting: boolean;
   pointerLocked: boolean;
+  zoneName: string;
+  checkpointName: string;
 };
 
 export function createDebugPanel(parent: HTMLElement) {
@@ -40,7 +42,10 @@ export function createDebugPanel(parent: HTMLElement) {
       `Grounded: ${state.grounded ? "yes" : "no"}`,
       `Aiming: ${state.aiming ? "yes" : "no"}`,
       `Sprint: ${state.sprinting ? "yes" : "no"}`,
+      `Zone: ${state.zoneName}`,
+      `Checkpoint: ${state.checkpointName}`,
       `Player: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
+      "1-4: skip zones",
       "F3: debug",
       "Esc: pause",
     ].join("<br />");

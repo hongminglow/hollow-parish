@@ -38,12 +38,10 @@ const sprintSpeed = 5.2;
 const aimSpeed = 1.7;
 const gravity = -20;
 
-export function createPlayerState(): PlayerState {
-  const spawnPosition = { x: 0, y: 0.95, z: 2.6 };
-
+export function createPlayerState(spawnPosition: Vec3): PlayerState {
   return {
     position: { ...spawnPosition },
-    spawnPosition,
+    spawnPosition: { ...spawnPosition },
     velocity: { x: 0, y: 0, z: 0 },
     yaw: 0,
     health: 100,
@@ -108,7 +106,15 @@ export function syncPlayerPhysics(player: PlayerState, result: PlayerPhysicsResu
 }
 
 export function respawnPlayer(player: PlayerState) {
-  player.position = { ...player.spawnPosition };
+  placePlayerAt(player, player.spawnPosition);
+}
+
+export function setPlayerSpawn(player: PlayerState, spawnPosition: Vec3) {
+  player.spawnPosition = { ...spawnPosition };
+}
+
+export function placePlayerAt(player: PlayerState, position: Vec3) {
+  player.position = { ...position };
   player.velocity = { x: 0, y: 0, z: 0 };
   player.health = 100;
   player.isDead = false;

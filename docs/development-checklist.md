@@ -158,71 +158,71 @@ Goal: create the complete graybox route from road to final boss arena.
 
 ### World Conventions
 
-- [ ] Define world units.
-- [ ] Define origin and map orientation.
-- [ ] Define naming convention for zones.
-- [ ] Define collision proxy convention.
-- [ ] Define spawn point convention.
-- [ ] Define interaction trigger convention.
+- [x] Define world units.
+- [x] Define origin and map orientation.
+- [x] Define naming convention for zones.
+- [x] Define collision proxy convention.
+- [x] Define spawn point convention.
+- [x] Define interaction trigger convention.
 
 ### Zone 1: Abandoned Road
 
-- [ ] Block out forest road.
-- [ ] Add broken cart cover.
-- [ ] Add small shrine.
-- [ ] Add locked village gate.
-- [ ] Add side shack.
-- [ ] Add basic lighting markers.
-- [ ] Add static colliders.
-- [ ] Add enemy spawn markers.
-- [ ] Add loot spawn markers.
-- [ ] Add checkpoint marker.
+- [x] Block out forest road.
+- [x] Add broken cart cover.
+- [x] Add small shrine.
+- [x] Add locked village gate.
+- [x] Add side shack.
+- [x] Add basic lighting markers.
+- [x] Add static colliders.
+- [x] Add enemy spawn markers.
+- [x] Add loot spawn markers.
+- [x] Add checkpoint marker.
 
 ### Zone 2: Mill Yard
 
-- [ ] Block out open yard.
-- [ ] Add windmill silhouette.
-- [ ] Add barn interior.
-- [ ] Add raised walkway.
-- [ ] Add locked storehouse.
-- [ ] Add shortcut door route.
-- [ ] Add static colliders.
-- [ ] Add enemy spawn markers.
-- [ ] Add loot spawn markers.
-- [ ] Add crank interaction marker.
+- [x] Block out open yard.
+- [x] Add windmill silhouette.
+- [x] Add barn interior.
+- [x] Add raised walkway.
+- [x] Add locked storehouse.
+- [x] Add shortcut door route.
+- [x] Add static colliders.
+- [x] Add enemy spawn markers.
+- [x] Add loot spawn markers.
+- [x] Add crank interaction marker.
 
 ### Zone 3: Chapel Crypt
 
-- [ ] Block out chapel entrance.
-- [ ] Add basement stairs.
-- [ ] Add crypt corridors.
-- [ ] Add side room for emblem.
-- [ ] Add altar interaction point.
-- [ ] Add exit ladder or transition route.
-- [ ] Add low-visibility lighting pass.
-- [ ] Add static colliders.
-- [ ] Add enemy spawn markers.
-- [ ] Add final pre-boss checkpoint marker.
+- [x] Block out chapel entrance.
+- [x] Add basement stairs.
+- [x] Add crypt corridors.
+- [x] Add side room for emblem.
+- [x] Add altar interaction point.
+- [x] Add exit ladder or transition route.
+- [x] Add low-visibility lighting pass.
+- [x] Add static colliders.
+- [x] Add enemy spawn markers.
+- [x] Add final pre-boss checkpoint marker.
 
 ### Final Arena: Bell Tower Courtyard
 
-- [ ] Block out circular courtyard.
-- [ ] Add bell tower center shape.
-- [ ] Add collapsed wall cover pieces.
-- [ ] Add arena boundary.
-- [ ] Add emergency loot corners.
-- [ ] Add boss spawn marker.
-- [ ] Add minion spawn markers.
-- [ ] Add escape gate.
-- [ ] Add arena static colliders.
+- [x] Block out circular courtyard.
+- [x] Add bell tower center shape.
+- [x] Add collapsed wall cover pieces.
+- [x] Add arena boundary.
+- [x] Add emergency loot corners.
+- [x] Add boss spawn marker.
+- [x] Add minion spawn markers.
+- [x] Add escape gate.
+- [x] Add arena static colliders.
 
 ### Zone Flow
 
-- [ ] Add zone trigger volumes.
-- [ ] Add objective trigger points.
-- [ ] Add player respawn points per checkpoint.
-- [ ] Add map bounds.
-- [ ] Add development skip-to-zone debug command.
+- [x] Add zone trigger volumes.
+- [x] Add objective trigger points.
+- [x] Add player respawn points per checkpoint.
+- [x] Add map bounds.
+- [x] Add development skip-to-zone debug command.
 
 ### Phase 2 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually verify Phase 1 movement, aiming, collision, HUD, and console health in a browser, then start Phase 2 map blockout.
+- [ ] Visually walk Phase 2 from road to bell tower in browser, then start Phase 3 combat prototype.
