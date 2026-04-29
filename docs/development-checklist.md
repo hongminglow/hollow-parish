@@ -499,15 +499,15 @@ Goal: replace graybox presentation while preserving performance and readability.
 ### Environment Art
 
 - [ ] Replace road placeholders.
-- [ ] Replace forest props.
+- [x] Replace forest props.
 - [ ] Replace village gate.
-- [ ] Replace mill yard props.
+- [x] Replace mill yard props.
 - [ ] Replace barn props.
 - [ ] Replace chapel props.
-- [ ] Replace crypt props.
-- [ ] Replace bell tower props.
+- [x] Replace crypt props.
+- [x] Replace bell tower props.
 - [ ] Add loot crate visuals.
-- [ ] Add lantern visuals.
+- [x] Add lantern visuals.
 
 ### Character Art
 
@@ -521,57 +521,57 @@ Goal: replace graybox presentation while preserving performance and readability.
 
 ### Animation
 
-- [ ] Add player idle.
-- [ ] Add player walk.
-- [ ] Add player run.
-- [ ] Add player aim idle.
-- [ ] Add player aim walk.
+- [x] Add player idle.
+- [x] Add player walk.
+- [x] Add player run.
+- [x] Add player aim idle.
+- [x] Add player aim walk.
 - [ ] Add player shoot.
 - [ ] Add player reload.
 - [ ] Add player damage.
-- [ ] Add player death.
-- [ ] Add enemy idle.
-- [ ] Add enemy walk.
-- [ ] Add enemy attack.
-- [ ] Add enemy hit.
-- [ ] Add enemy stagger.
+- [x] Add player death.
+- [x] Add enemy idle.
+- [x] Add enemy walk.
+- [x] Add enemy attack.
+- [x] Add enemy hit.
+- [x] Add enemy stagger.
 - [ ] Add enemy death.
-- [ ] Add boss animations.
+- [x] Add boss animations.
 
 ### Lighting And Atmosphere
 
-- [ ] Add cold moonlight pass.
-- [ ] Add warm lantern contrast.
-- [ ] Tune fog density.
-- [ ] Add zone-specific lighting.
-- [ ] Improve boss arena readability.
-- [ ] Keep enemies readable against background.
+- [x] Add cold moonlight pass.
+- [x] Add warm lantern contrast.
+- [x] Tune fog density.
+- [x] Add zone-specific lighting.
+- [x] Improve boss arena readability.
+- [x] Keep enemies readable against background.
 
 ### Audio
 
 - [ ] Add footsteps.
-- [ ] Add gunshot.
-- [ ] Add reload.
+- [x] Add gunshot.
+- [x] Add reload.
 - [ ] Add enemy growls.
-- [ ] Add enemy hit.
+- [x] Add enemy hit.
 - [ ] Add enemy death.
-- [ ] Add pickup sound.
-- [ ] Add gate unlock sound.
+- [x] Add pickup sound.
+- [x] Add gate unlock sound.
 - [ ] Add ambient wind.
 - [ ] Add distant bell.
-- [ ] Add boss roar.
+- [x] Add boss roar.
 - [ ] Add boss music placeholder.
 
 ### UI Polish
 
-- [ ] Style HUD.
-- [ ] Style objective chip.
-- [ ] Style reticle.
-- [ ] Style inventory menu.
-- [ ] Style pause menu.
-- [ ] Style death screen.
-- [ ] Style win screen.
-- [ ] Add settings stub.
+- [x] Style HUD.
+- [x] Style objective chip.
+- [x] Style reticle.
+- [x] Style inventory menu.
+- [x] Style pause menu.
+- [x] Style death screen.
+- [x] Style win screen.
+- [x] Add settings stub.
 
 ### Phase 7 Acceptance
 
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually playtest Phases 3-6 in browser, then start Phase 7 art/audio/UI polish.
+- [ ] Visually playtest Phases 3-7 in browser, then start Phase 8 QA/balancing/release candidate.

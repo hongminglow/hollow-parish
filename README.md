@@ -145,8 +145,8 @@ src/
 
 ## Current Status
 
-Phase 0 through Phase 6 implementation is in place. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy detection, chase movement, attack windups, active damage windows, recovery, stagger, hearing from gunshots, basic enemy variants, collectable loot, key items, healing, a Tab inventory menu, route locks, timed interactions, objective updates, checkpoint state restoration, a two-phase Bellkeeper boss encounter, boss health HUD, arena lock, charge and ground-slam attacks, minion pressure, escape gate unlock, and win screen.
+Phase 0 through Phase 7 implementation is in place. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy AI, collectable loot, key items, healing, a Tab inventory menu, route locks, timed interactions, objective updates, checkpoint restoration, a two-phase Bellkeeper boss encounter, boss health HUD, arena lock, charge and ground-slam attacks, minion pressure, escape gate unlock, win screen, procedural environment dressing, fog and lantern atmosphere, placeholder animation, procedural audio cues, responsive HUD polish, and a settings stub.
 
 Next task:
 
-- Visually playtest Phases 3-6 in a browser, then continue into Phase 7 art, audio, animation, lighting, and UI polish.
+- Visually playtest Phases 3-7 in a browser, then continue into Phase 8 QA, balancing, and release-candidate cleanup.

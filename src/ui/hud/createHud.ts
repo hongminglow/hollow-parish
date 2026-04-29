@@ -49,6 +49,11 @@ export function createHud(parent: HTMLElement) {
       <div class="pause-card">
         <h1 class="pause-title">Paused</h1>
         <p class="pause-copy">Combat prototype online: aim, fire, reload, and survive the infected placeholders.</p>
+        <div class="settings-stub" aria-label="Settings preview">
+          <span>Audio: procedural</span>
+          <span>Visuals: low-poly horror</span>
+          <span>Motion: reduced HUD motion</span>
+        </div>
       </div>
     </section>
     <section class="death-overlay" data-hud-death>

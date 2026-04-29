@@ -39,11 +39,29 @@ button {
   width: 100%;
   height: 100%;
   background:
+    radial-gradient(circle at 76% 72%, rgba(138, 64, 42, 0.12), transparent 22rem),
     radial-gradient(circle at 30% 18%, rgba(101, 122, 116, 0.18), transparent 26rem),
     linear-gradient(135deg, #060909, #101516 52%, #050607);
 }
 
+.game-shell::after {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 50%, transparent 50%),
+    radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.34));
+  background-size:
+    100% 4px,
+    100% 100%;
+  mix-blend-mode: soft-light;
+  z-index: 1;
+}
+
 .game-canvas {
+  position: relative;
+  z-index: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -54,6 +72,7 @@ button {
   pointer-events: none;
   position: absolute;
   inset: 0;
+  z-index: 2;
   padding: 20px;
 }
 
@@ -242,6 +261,7 @@ button {
   position: absolute;
   right: 20px;
   bottom: 20px;
+  z-index: 3;
   min-width: 180px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -343,6 +363,7 @@ button {
   display: grid;
   place-items: center end;
   padding: 24px;
+  z-index: 4;
   background: linear-gradient(90deg, transparent 0%, rgba(5, 7, 7, 0.42) 54%, rgba(5, 7, 7, 0.74));
   opacity: 0;
   visibility: hidden;
@@ -474,11 +495,27 @@ button {
   line-height: 1.6;
 }
 
+.settings-stub {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.settings-stub span {
+  padding: 9px 10px;
+  border: 1px solid rgba(243, 234, 217, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--hud-muted);
+  font-size: 12px;
+}
+
 .error-panel {
   pointer-events: auto;
   position: absolute;
   right: 20px;
   top: 20px;
+  z-index: 5;
   max-width: min(520px, calc(100vw - 40px));
   padding: 14px;
   border-color: rgba(189, 76, 50, 0.5);
@@ -488,4 +525,38 @@ button {
 
 .error-panel.is-hidden {
   display: none;
+}
+
+@media (max-width: 720px) {
+  .hud {
+    padding: 12px;
+  }
+
+  .objective-chip {
+    top: 12px;
+    left: 12px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .boss-hud {
+    top: 86px;
+    width: calc(100vw - 24px);
+  }
+
+  .status-strip {
+    left: 12px;
+    bottom: 12px;
+    gap: 10px;
+  }
+
+  .prompt {
+    bottom: 78px;
+    min-width: 0;
+    width: calc(100vw - 24px);
+  }
+
+  .inventory-menu {
+    place-items: end center;
+    padding: 12px;
+  }
 }

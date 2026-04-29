@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createGameAudio } from "../../audio/createGameAudio";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
 import {
@@ -58,6 +59,7 @@ import { createPhysicsWorld } from "../../physics/world";
 import { createCombatFeedback } from "../effects/combatFeedback";
 import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
 import { createEnemyView } from "../objects/enemyView";
+import { createEnvironmentPolishView } from "../objects/environmentPolishView";
 import { createMapBlockoutView } from "../objects/mapBlockoutView";
 import { createPickupView } from "../objects/pickupView";
 import { createPlayerView } from "../objects/playerView";
@@ -90,12 +92,14 @@ export async function createGame(root: HTMLElement) {
   const scene = createScene();
   const camera = createCamera();
   const mapView = createMapBlockoutView(scene);
+  const environmentPolishView = createEnvironmentPolishView(scene);
   const enemyView = createEnemyView(scene, enemies);
   const pickupView = createPickupView(scene, pickups);
   const playerView = createPlayerView(scene);
   const combatFeedback = createCombatFeedback(scene);
   const cameraController = createThirdPersonCamera(camera);
   const input = createKeyboardMouseInput(renderer.domElement);
+  const audio = createGameAudio();
   const hud = createHud(shell);
   const inventoryMenu = createInventoryMenu(shell);
   const debugPanel = createDebugPanel(shell);
@@ -137,6 +141,7 @@ export async function createGame(root: HTMLElement) {
   function setPaused(nextPaused: boolean) {
     isPaused = nextPaused;
     hud.setPaused(isPaused);
+    audio.ui();
   }
 
   function handleVisibilityChange() {
@@ -220,6 +225,7 @@ export async function createGame(root: HTMLElement) {
 
       if (event.type === "player-hit") {
         showCombatMessage(`${event.enemy.label} hit you for ${event.damage}`);
+        audio.damage();
       }
 
       if (event.type === "attack-start") {
@@ -275,6 +281,7 @@ export async function createGame(root: HTMLElement) {
 
   function setInventoryOpen(nextOpen: boolean) {
     isInventoryOpen = nextOpen;
+    audio.ui();
 
     if (isInventoryOpen && document.pointerLockElement) {
       document.exitPointerLock();
@@ -286,6 +293,7 @@ export async function createGame(root: HTMLElement) {
     showCombatMessage(result.message);
 
     if (result.used) {
+      audio.heal();
       saveCheckpointSnapshot();
     }
   }
@@ -298,6 +306,7 @@ export async function createGame(root: HTMLElement) {
       showCombatMessage(result.message);
 
       if (result.collected) {
+        audio.pickup();
         saveCheckpointSnapshot();
       }
 
@@ -328,6 +337,9 @@ export async function createGame(root: HTMLElement) {
     if (result.type === "complete") {
       if (progression.flags.escapeGateUnlocked) {
         showCombatMessage("You escaped the parish", 1.8);
+        audio.win();
+      } else {
+        audio.gate();
       }
 
       saveCheckpointSnapshot();
@@ -360,6 +372,7 @@ export async function createGame(root: HTMLElement) {
     const result = completeInteraction(activeInteraction.id, progression);
     showCombatMessage(result.message);
     activeInteraction = null;
+    audio.gate();
     saveCheckpointSnapshot();
   }
 
@@ -439,6 +452,7 @@ export async function createGame(root: HTMLElement) {
     const wallDistance = physics.castCameraRay(ray.origin, ray.direction, weapon.config.range);
     const result = resolveHitscanShot(weapon, enemies, ray, wallDistance);
     alertEnemiesToNoise(enemies, player.position, weapon.config.range * 0.65);
+    audio.shot();
 
     combatFeedback.spawnMuzzleFlash(ray.origin, ray.direction);
     combatFeedback.spawnShot(
@@ -449,6 +463,7 @@ export async function createGame(root: HTMLElement) {
 
     if (result.type === "hit") {
       combatFeedback.spawnHit(result.hitPoint, result.hitPart === "head" ? 0xfff1c4 : 0xd45c3f);
+      audio.hit();
       showCombatMessage(
         result.enemy.isDead
           ? `${result.enemy.label} down`
@@ -470,11 +485,13 @@ export async function createGame(root: HTMLElement) {
     for (const event of events) {
       if (event.type === "started") {
         showCombatMessage("The Bellkeeper rises", 1.35);
+        audio.boss();
       }
 
       if (event.type === "phase-two") {
         showCombatMessage("The Bellkeeper breaks its chain", 1.45);
         combatFeedback.spawnArea(event.boss.position, 5.2, 0xd7a647, 0.8);
+        audio.boss();
       }
 
       if (event.type === "charge-windup") {
@@ -484,6 +501,7 @@ export async function createGame(root: HTMLElement) {
       if (event.type === "charge-impact") {
         combatFeedback.spawnHit(event.boss.position, event.hitPlayer ? 0xffd46b : 0x8f9ba2);
         showCombatMessage(event.hitPlayer ? "Crushed by charge" : "Charge missed", 0.8);
+        audio.damage();
       }
 
       if (event.type === "slam-windup") {
@@ -494,6 +512,7 @@ export async function createGame(root: HTMLElement) {
       if (event.type === "slam-impact") {
         combatFeedback.spawnArea(event.boss.position, event.radius, 0xffd46b, 0.45);
         showCombatMessage(event.hitPlayer ? "Slam hit" : "Slam missed", 0.8);
+        audio.damage();
       }
 
       if (event.type === "minions-summoned") {
@@ -503,6 +522,7 @@ export async function createGame(root: HTMLElement) {
       if (event.type === "defeated") {
         progression.flags.bossDefeated = true;
         showCombatMessage("The Bellkeeper is down. Find the escape gate.", 1.6);
+        audio.boss();
         saveCheckpointSnapshot();
       }
     }
@@ -512,6 +532,14 @@ export async function createGame(root: HTMLElement) {
     const deltaSeconds = Math.min(0.1, (time - previousTime) / 1000);
     previousTime = time;
     frameInput = input.consumeFrame();
+
+    if (
+      frameInput.pressed.size > 0 ||
+      frameInput.mouseDelta.x !== 0 ||
+      frameInput.mouseDelta.y !== 0
+    ) {
+      audio.resume();
+    }
 
     if (frameInput.wasPressed("pause")) {
       setPaused(!isPaused);
@@ -578,6 +606,7 @@ export async function createGame(root: HTMLElement) {
 
     if (!isGameBlocked && !player.isDead && frameInput.wasPressed("reload")) {
       showCombatMessage(tryStartReload(weapon) ? "Reloading" : "Cannot reload");
+      audio.reload();
     }
 
     if (player.position.y < -6) {
@@ -591,9 +620,10 @@ export async function createGame(root: HTMLElement) {
       deltaSeconds,
       physics,
     });
-    playerView.sync(player);
-    enemyView.sync();
+    playerView.sync(player, deltaSeconds);
+    enemyView.sync(elapsed);
     pickupView.sync(elapsed);
+    environmentPolishView.update(elapsed);
     combatFeedback.update(deltaSeconds);
 
     if (!isGameBlocked && !player.isDead && frameInput.wasPressed("shoot")) {
@@ -664,8 +694,10 @@ export async function createGame(root: HTMLElement) {
     playerView.dispose();
     enemyView.dispose();
     pickupView.dispose();
+    environmentPolishView.dispose();
     mapView.dispose();
     combatFeedback.dispose();
+    audio.dispose();
     physics.dispose();
     renderer.dispose();
     shell.remove();

@@ -6,6 +6,7 @@ type EnemyVisual = {
   group: THREE.Group;
   body: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  weapon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   healthFill: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   warning: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 };
@@ -29,9 +30,9 @@ export function createEnemyView(scene: THREE.Scene, enemies: EnemyState[]) {
   scene.add(group);
 
   return {
-    sync() {
+    sync(elapsed: number) {
       for (const visual of visuals) {
-        syncEnemyVisual(visual);
+        syncEnemyVisual(visual, elapsed);
       }
     },
     dispose() {
@@ -64,6 +65,14 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
       roughness: 0.82,
     }),
   );
+  const weapon = new THREE.Mesh(
+    new THREE.BoxGeometry(enemy.kind === "hook" ? 0.1 : 0.08, 0.52 * scale, 0.08),
+    new THREE.MeshStandardMaterial({
+      color: enemy.kind === "hook" ? 0x9f7a43 : 0x2f2520,
+      roughness: 0.8,
+      metalness: enemy.kind === "hook" ? 0.18 : 0.04,
+    }),
+  );
   const healthBack = new THREE.Mesh(
     new THREE.BoxGeometry(0.9 * scale, 0.08, 0.05),
     new THREE.MeshBasicMaterial({ color: 0x1b1010 }),
@@ -85,6 +94,8 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   group.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
   body.position.y = 0.35 * scale;
   head.position.y = 1.1 * scale;
+  weapon.position.set(0.48 * scale, 0.58 * scale, -0.14);
+  weapon.rotation.z = -0.35;
   healthBack.position.y = 1.7 * scale;
   healthFill.position.set(0, 1.7 * scale, 0.03);
   warning.rotation.x = Math.PI / 2;
@@ -92,26 +103,44 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   warning.visible = false;
   body.castShadow = true;
   head.castShadow = true;
-  group.add(warning, body, head, healthBack, healthFill);
+  weapon.castShadow = true;
+  group.add(warning, body, head, weapon, healthBack, healthFill);
 
   return {
     enemy,
     group,
     body,
     head,
+    weapon,
     healthFill,
     warning,
   };
 }
 
-function syncEnemyVisual(visual: EnemyVisual) {
-  const { enemy, group, body, head, healthFill, warning } = visual;
+function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
+  const { enemy, group, body, head, weapon, healthFill, warning } = visual;
   const healthRatio = enemy.maxHealth > 0 ? enemy.health / enemy.maxHealth : 0;
   const bodyColor = getBodyColor(enemy);
+  const movementBob =
+    enemy.state === "chase"
+      ? Math.sin(elapsed * (enemy.kind === "hook" ? 9 : 6.6) + enemy.position.x) * 0.045
+      : enemy.state === "idle"
+        ? Math.sin(elapsed * 1.1 + enemy.position.z) * 0.015
+        : 0;
 
   group.visible = !enemy.isDead;
-  group.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
+  group.position.set(enemy.position.x, enemy.position.y + movementBob, enemy.position.z);
   group.rotation.y += enemy.state === "idle" ? 0.002 : enemy.kind === "boss" ? 0.004 : 0.007;
+  body.rotation.x =
+    enemy.state === "attackWindup"
+      ? -0.18
+      : enemy.state === "attackActive"
+        ? 0.22
+        : enemy.state === "staggered"
+          ? 0.28
+          : 0;
+  weapon.rotation.x = enemy.state === "attackActive" ? -0.9 : -0.25;
+  weapon.visible = enemy.kind !== "infected" || enemy.state !== "idle";
   body.material.color.setHex(bodyColor);
   head.material.color.setHex(enemy.hitFlashRemaining > 0 ? 0xffffff : 0xb9b08e);
   healthFill.scale.x = Math.max(0.001, healthRatio);
