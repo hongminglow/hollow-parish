@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { createGameAudio } from "../../audio/createGameAudio";
 import { mapBlockout } from "../../game/content/mapBlockout";
 import { createKeyboardMouseInput, type InputFrame } from "../../game/input/keyboardMouse";
+import { clearContinueSlot, loadContinueSlot, saveContinueSlot } from "../../game/save/continueSlot";
 import {
   createBossEncounterState,
   enforceBossArenaLock,
@@ -66,6 +67,7 @@ import { createPickupView } from "../objects/pickupView";
 import { createPlayerView } from "../objects/playerView";
 import { createHud } from "../../ui/hud/createHud";
 import { createInventoryMenu } from "../../ui/menus/createInventoryMenu";
+import { createMainMenu } from "../../ui/menus/createMainMenu";
 import { createRuntimeErrorPanel } from "../../ui/overlays/createRuntimeErrorPanel";
 import { createCamera } from "./createCamera";
 import { createRenderer } from "./createRenderer";
@@ -73,6 +75,7 @@ import { createScene } from "./createScene";
 
 const fixedStep = 1 / 60;
 const maxAccumulatedTime = fixedStep * 5;
+const volumeStorageKey = "hollow-parish-master-volume";
 
 export async function createGame(root: HTMLElement) {
   const shell = document.createElement("div");
@@ -105,16 +108,20 @@ export async function createGame(root: HTMLElement) {
   const inventoryMenu = createInventoryMenu(shell);
   const debugPanel = createDebugPanel(shell);
   const errorPanel = createRuntimeErrorPanel(shell);
+  const storedVolume = localStorage.getItem(volumeStorageKey);
 
   let animationFrame = 0;
   let previousTime = performance.now();
   let accumulator = 0;
   let elapsed = 0;
   let isPaused = false;
+  let isMainMenuOpen = true;
   let frameInput: InputFrame = input.consumeFrame();
   let combatMessage = "";
   let combatMessageRemaining = 0;
   let isInventoryOpen = false;
+  let volume = readStoredVolume(storedVolume);
+  let savedContinueSlot = loadContinueSlot();
   let activeInteraction: {
     id: InteractionId;
     label: string;
@@ -129,6 +136,21 @@ export async function createGame(root: HTMLElement) {
     pickups,
     enemies,
   );
+  const initialSnapshot = checkpointSnapshot;
+  const mainMenu = createMainMenu(shell, {
+    onNewGame: startNewGame,
+    onContinue: continueGame,
+    onVolumeChange: setVolume,
+  });
+
+  audio.setVolume(volume);
+  hud.setVolume(volume);
+  hud.setPauseHandlers({
+    onResume: () => setPaused(false),
+    onMainMenu: openMainMenu,
+    onVolumeChange: setVolume,
+  });
+  updateMainMenu();
 
   function resize() {
     const width = Math.max(1, shell.clientWidth);
@@ -139,10 +161,29 @@ export async function createGame(root: HTMLElement) {
     renderer.setSize(width, height, false);
   }
 
+  function readStoredVolume(stored: string | null) {
+    if (stored === null) {
+      return 0.72;
+    }
+
+    const parsed = Number(stored);
+    return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 0.72;
+  }
+
   function setPaused(nextPaused: boolean) {
+    if (isMainMenuOpen) {
+      isPaused = false;
+      hud.setPaused(false);
+      return;
+    }
+
     isPaused = nextPaused;
     hud.setPaused(isPaused);
     audio.ui();
+
+    if (isPaused && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
   }
 
   function handleVisibilityChange() {
@@ -163,6 +204,95 @@ export async function createGame(root: HTMLElement) {
 
   function saveCheckpointSnapshot() {
     checkpointSnapshot = createCheckpointSnapshot(weapon, inventory, progression, pickups, enemies);
+    savedContinueSlot = checkpointSnapshot;
+    saveContinueSlot(checkpointSnapshot);
+    updateMainMenu();
+  }
+
+  function updateMainMenu() {
+    mainMenu.update({
+      hasContinue: savedContinueSlot !== null,
+      isVisible: isMainMenuOpen,
+      volume,
+    });
+  }
+
+  function setVolume(nextVolume: number) {
+    volume = Math.max(0, Math.min(1, nextVolume));
+    localStorage.setItem(volumeStorageKey, String(volume));
+    audio.setVolume(volume);
+    hud.setVolume(volume);
+    updateMainMenu();
+  }
+
+  function startGameplay() {
+    isMainMenuOpen = false;
+    isPaused = false;
+    isInventoryOpen = false;
+    activeInteraction = null;
+    accumulator = 0;
+    previousTime = performance.now();
+    hud.setPaused(false);
+    updateMainMenu();
+    audio.resume();
+    audio.startAmbience();
+  }
+
+  function startNewGame() {
+    clearContinueSlot();
+    savedContinueSlot = null;
+    checkpointSnapshot = initialSnapshot;
+    restoreCheckpointSnapshot(
+      initialSnapshot,
+      player,
+      weapon,
+      inventory,
+      progression,
+      pickups,
+      enemies,
+    );
+    physics.resetPlayer(player.spawnPosition);
+    resetBossEncounter(bossEncounter);
+    combatMessage = "";
+    combatMessageRemaining = 0;
+    startGameplay();
+    showCombatMessage("Find the Village Gate Key", 1.2);
+  }
+
+  function continueGame() {
+    const slot = savedContinueSlot ?? loadContinueSlot();
+
+    if (!slot) {
+      return;
+    }
+
+    checkpointSnapshot = slot;
+    restoreCheckpointSnapshot(slot, player, weapon, inventory, progression, pickups, enemies);
+    physics.resetPlayer(player.spawnPosition);
+    resetBossEncounter(bossEncounter);
+
+    if (progression.flags.bossDefeated) {
+      bossEncounter.isDefeated = true;
+    }
+
+    savedContinueSlot = slot;
+    startGameplay();
+    showCombatMessage(`Checkpoint: ${progression.currentCheckpoint.name}`, 1.2);
+  }
+
+  function openMainMenu() {
+    isMainMenuOpen = true;
+    isPaused = false;
+    setInventoryOpen(false);
+    hud.setPaused(false);
+    audio.stopAmbience();
+    audio.ui();
+
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+
+    updateMainMenu();
   }
 
   function syncCheckpointIfChanged(previousCheckpointId: string) {
@@ -550,17 +680,17 @@ export async function createGame(root: HTMLElement) {
       audio.resume();
     }
 
-    if (frameInput.wasPressed("pause")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("pause")) {
       setPaused(!isPaused);
       setInventoryOpen(false);
     }
 
-    if (player.isDead && frameInput.wasPressed("restart")) {
+    if (!isMainMenuOpen && player.isDead && frameInput.wasPressed("restart")) {
       restartFromCheckpoint();
       showCombatMessage("Checkpoint restored");
     }
 
-    if (frameInput.wasPressed("inventory")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("inventory")) {
       setInventoryOpen(!isInventoryOpen);
     }
 
@@ -568,24 +698,24 @@ export async function createGame(root: HTMLElement) {
       debugPanel.toggle();
     }
 
-    if (frameInput.wasPressed("skipRoad")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("skipRoad")) {
       skipToZone(0);
     }
 
-    if (frameInput.wasPressed("skipMill")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("skipMill")) {
       skipToZone(1);
     }
 
-    if (frameInput.wasPressed("skipChapel")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("skipChapel")) {
       skipToZone(2);
     }
 
-    if (frameInput.wasPressed("skipArena")) {
+    if (!isMainMenuOpen && frameInput.wasPressed("skipArena")) {
       skipToZone(3);
     }
 
     const hasWon = progression.flags.escapeGateUnlocked;
-    const isGameBlocked = isPaused || isInventoryOpen || hasWon;
+    const isGameBlocked = isMainMenuOpen || isPaused || isInventoryOpen || hasWon;
 
     if (!isGameBlocked) {
       cameraController.applyLook(frameInput.mouseDelta);
@@ -641,6 +771,7 @@ export async function createGame(root: HTMLElement) {
 
     hud.update({
       health: player.health,
+      stamina: player.stamina,
       ammo: getAmmoText(weapon),
       objective: getCurrentObjective(progression),
       prompt: getPromptText(),
@@ -649,8 +780,8 @@ export async function createGame(root: HTMLElement) {
       hasWon,
       boss: getBossHudState(bossEncounter, enemies),
     });
-    hud.setReticleVisible(player.isAiming && !isInventoryOpen);
-    inventoryMenu.update(getInventoryRows(inventory, weapon), isInventoryOpen);
+    hud.setReticleVisible(player.isAiming && !isInventoryOpen && !isMainMenuOpen);
+    inventoryMenu.update(getInventoryRows(inventory, weapon), isInventoryOpen && !isMainMenuOpen);
 
     debugPanel.update({
       fps: deltaSeconds > 0 ? 1 / deltaSeconds : 0,
@@ -710,6 +841,7 @@ export async function createGame(root: HTMLElement) {
     environmentPolishView.dispose();
     mapView.dispose();
     combatFeedback.dispose();
+    mainMenu.dispose();
     audio.dispose();
     physics.dispose();
     renderer.dispose();

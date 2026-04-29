@@ -26,6 +26,7 @@ export type PlayerState = {
   velocity: Vec3;
   yaw: number;
   health: number;
+  stamina: number;
   invulnerabilityRemaining: number;
   isAiming: boolean;
   isSprinting: boolean;
@@ -38,6 +39,9 @@ const walkSpeed = 3.1;
 const sprintSpeed = 5.2;
 const aimSpeed = 1.7;
 const gravity = -20;
+const maxStamina = 100;
+const staminaDrainPerSecond = 23;
+const staminaRecoverPerSecond = 18;
 
 export function createPlayerState(spawnPosition: Vec3): PlayerState {
   return {
@@ -46,6 +50,7 @@ export function createPlayerState(spawnPosition: Vec3): PlayerState {
     velocity: { x: 0, y: 0, z: 0 },
     yaw: 0,
     health: 100,
+    stamina: maxStamina,
     invulnerabilityRemaining: 0,
     isAiming: false,
     isSprinting: false,
@@ -65,7 +70,7 @@ export function updatePlayerMoveIntent(player: PlayerState, intent: PlayerMoveIn
   }
 
   const hasMoveInput = intent.movementAxis.x !== 0 || intent.movementAxis.z !== 0;
-  const canSprint = intent.isSprinting && hasMoveInput && !intent.isAiming;
+  const canSprint = intent.isSprinting && hasMoveInput && !intent.isAiming && player.stamina > 2;
   const speed = intent.isAiming ? aimSpeed : canSprint ? sprintSpeed : walkSpeed;
   const forward = {
     x: -Math.sin(intent.cameraYaw),
@@ -80,6 +85,12 @@ export function updatePlayerMoveIntent(player: PlayerState, intent: PlayerMoveIn
 
   player.isAiming = intent.isAiming;
   player.isSprinting = canSprint;
+  player.stamina = clamp(
+    player.stamina +
+      (canSprint ? -staminaDrainPerSecond : staminaRecoverPerSecond) * intent.deltaSeconds,
+    0,
+    maxStamina,
+  );
   player.movementState = intent.isAiming
     ? "aim"
     : canSprint
@@ -158,10 +169,15 @@ export function placePlayerAt(player: PlayerState, position: Vec3) {
   player.position = { ...position };
   player.velocity = { x: 0, y: 0, z: 0 };
   player.health = 100;
+  player.stamina = maxStamina;
   player.invulnerabilityRemaining = 0;
   player.isDead = false;
   player.isGrounded = false;
   player.isAiming = false;
   player.isSprinting = false;
   player.movementState = "idle";
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }

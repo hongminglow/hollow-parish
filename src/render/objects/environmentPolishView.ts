@@ -21,6 +21,7 @@ export function createEnvironmentPolishView(scene: THREE.Scene) {
   const materials = createMaterials();
 
   addRoadTrees(group, materials);
+  addRoadDressing(group, materials);
   addMillDressing(group, materials, flickers);
   addCryptDressing(group, materials, wisps);
   addArenaDressing(group, materials, flickers, wisps);
@@ -69,11 +70,26 @@ function addRoadTrees(group: THREE.Group, materials: ReturnType<typeof createMat
   }
 }
 
+function addRoadDressing(group: THREE.Group, materials: ReturnType<typeof createMaterials>) {
+  group.add(createRoof(-2.8, 3.6, 2.6, 2.3, 2.45, materials));
+
+  for (const [x, z, rotation, length] of [
+    [-4.1, 13.4, 0.12, 2.4],
+    [4.1, 11.1, -0.08, 2.2],
+    [-4.15, 5.4, -0.05, 2.6],
+    [4.08, 3.4, 0.08, 2],
+  ]) {
+    group.add(createFenceSegment(x, z, rotation, length, materials));
+  }
+}
+
 function addMillDressing(
   group: THREE.Group,
   materials: ReturnType<typeof createMaterials>,
   flickers: FlickerLight[],
 ) {
+  group.add(createRoof(-5.4, -12.2, 4.4, 8.6, 3.15, materials));
+  group.add(createRoof(7.4, -18.2, 4.2, 3.7, 2.75, materials));
   group.add(createLantern(5.25, -17.2, materials, flickers));
   group.add(createLantern(-8.7, -23.3, materials, flickers));
 
@@ -91,6 +107,9 @@ function addCryptDressing(
   materials: ReturnType<typeof createMaterials>,
   wisps: FogWisp[],
 ) {
+  group.add(createChapelFacadeDetails(materials));
+  group.add(createArchway(0, -36.4, materials));
+
   for (const [x, z, rotation] of [
     [-2.3, -39.2, -0.22],
     [2.2, -40.4, 0.2],
@@ -114,8 +133,112 @@ function addArenaDressing(
   group.add(createLantern(-4.9, -58.2, materials, flickers));
   group.add(createLantern(4.9, -68.8, materials, flickers));
   group.add(createBellChains(materials));
+  group.add(createRubbleRing(materials));
   addFogWisp(group, -4.7, -63.1, 2.2, materials, wisps);
   addFogWisp(group, 4.8, -65.7, 2.6, materials, wisps);
+}
+
+function createRoof(
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+  y: number,
+  materials: ReturnType<typeof createMaterials>,
+) {
+  const roof = new THREE.Group();
+  const left = new THREE.Mesh(new THREE.BoxGeometry(width * 0.62, 0.18, depth), materials.roof);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(width * 0.62, 0.18, depth), materials.roof);
+
+  left.position.set(-width * 0.23, 0, 0);
+  right.position.set(width * 0.23, 0, 0);
+  left.rotation.z = 0.42;
+  right.rotation.z = -0.42;
+  roof.position.set(x, y, z);
+  roof.add(left, right);
+  return roof;
+}
+
+function createFenceSegment(
+  x: number,
+  z: number,
+  rotation: number,
+  length: number,
+  materials: ReturnType<typeof createMaterials>,
+) {
+  const fence = new THREE.Group();
+  const railTop = new THREE.Mesh(new THREE.BoxGeometry(length, 0.08, 0.08), materials.darkWood);
+  const railBottom = new THREE.Mesh(new THREE.BoxGeometry(length, 0.07, 0.07), materials.darkWood);
+
+  railTop.position.y = 0.86;
+  railBottom.position.y = 0.48;
+  fence.add(railTop, railBottom);
+
+  for (const offset of [-length / 2 + 0.15, length / 2 - 0.15]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.05, 0.12), materials.darkWood);
+    post.position.set(offset, 0.52, 0);
+    fence.add(post);
+  }
+
+  fence.position.set(x, 0, z);
+  fence.rotation.y = rotation;
+  return fence;
+}
+
+function createChapelFacadeDetails(materials: ReturnType<typeof createMaterials>) {
+  const group = new THREE.Group();
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.26, 3.2, 0.28), materials.stone);
+  const rightPillar = leftPillar.clone();
+  const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.35, 0.08), materials.iron);
+  const windowGlow = new THREE.Mesh(
+    new THREE.BoxGeometry(0.82, 1.05, 0.04),
+    materials.coldGlass,
+  );
+  const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.1, 0.08), materials.iron);
+  const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.12, 0.08), materials.iron);
+
+  leftPillar.position.set(-2.55, 1.6, -31.04);
+  rightPillar.position.set(2.55, 1.6, -31.04);
+  windowFrame.position.set(0, 2.55, -31.02);
+  windowGlow.position.set(0, 2.55, -30.98);
+  crossV.position.set(0, 4.05, -31);
+  crossH.position.set(0, 4.16, -30.98);
+  group.add(leftPillar, rightPillar, windowFrame, windowGlow, crossV, crossH);
+  return group;
+}
+
+function createArchway(x: number, z: number, materials: ReturnType<typeof createMaterials>) {
+  const group = new THREE.Group();
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.9, 0.18), materials.stone);
+  const right = left.clone();
+  const top = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.08, 8, 24, Math.PI), materials.stone);
+
+  left.position.set(-0.92, 0.95, 0);
+  right.position.set(0.92, 0.95, 0);
+  top.position.set(0, 1.9, 0);
+  top.rotation.z = Math.PI;
+  group.position.set(x, 0, z);
+  group.add(left, right, top);
+  return group;
+}
+
+function createRubbleRing(materials: ReturnType<typeof createMaterials>) {
+  const ring = new THREE.Group();
+
+  for (let index = 0; index < 16; index += 1) {
+    const angle = (index / 16) * Math.PI * 2;
+    const radius = 6.4 + Math.sin(index * 1.7) * 0.45;
+    const stone = new THREE.Mesh(
+      new THREE.BoxGeometry(0.45 + (index % 3) * 0.08, 0.22, 0.34),
+      materials.stone,
+    );
+
+    stone.position.set(Math.cos(angle) * radius, 0.11, -63.5 + Math.sin(angle) * radius);
+    stone.rotation.y = angle + 0.4;
+    ring.add(stone);
+  }
+
+  return ring;
 }
 
 function createDeadTree(x: number, z: number, materials: ReturnType<typeof createMaterials>) {
@@ -224,8 +347,16 @@ function createMaterials() {
     bark: new THREE.MeshStandardMaterial({ color: 0x211a13, roughness: 0.96 }),
     darkWood: new THREE.MeshStandardMaterial({ color: 0x342318, roughness: 0.9 }),
     crate: new THREE.MeshStandardMaterial({ color: 0x5a3821, roughness: 0.82 }),
+    roof: new THREE.MeshStandardMaterial({ color: 0x261a14, roughness: 0.94 }),
     stone: new THREE.MeshStandardMaterial({ color: 0x454847, roughness: 0.94 }),
+    iron: new THREE.MeshStandardMaterial({ color: 0x191918, roughness: 0.72, metalness: 0.22 }),
     metal: new THREE.MeshStandardMaterial({ color: 0x5c5447, roughness: 0.72, metalness: 0.2 }),
+    coldGlass: new THREE.MeshStandardMaterial({
+      color: 0x516a70,
+      emissive: 0x26383d,
+      emissiveIntensity: 1.1,
+      roughness: 0.38,
+    }),
     lantern: new THREE.MeshStandardMaterial({
       color: 0xf0b45b,
       emissive: 0xd79a45,

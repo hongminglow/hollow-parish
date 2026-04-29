@@ -1,6 +1,7 @@
 type HudState = {
   objective: string;
   health: number;
+  stamina: number;
   ammo: string;
   prompt: string;
   message: string;
@@ -24,9 +25,27 @@ export function createHud(parent: HTMLElement) {
       <div class="objective-text" data-hud-objective></div>
     </section>
     <section class="status-strip" aria-label="Player status">
-      <div class="status-item">
-        <div class="hud-label">Health</div>
-        <div class="hud-value" data-hud-health></div>
+      <div class="status-vitals">
+        <div class="vital-row">
+          <span class="vital-icon vital-icon-health" aria-hidden="true">+</span>
+          <div class="vital-copy">
+            <div class="hud-label">Health</div>
+            <div class="vital-track">
+              <div class="vital-fill vital-fill-health" data-hud-health-fill></div>
+            </div>
+          </div>
+          <strong class="vital-value" data-hud-health></strong>
+        </div>
+        <div class="vital-row">
+          <span class="vital-icon vital-icon-stamina" aria-hidden="true">S</span>
+          <div class="vital-copy">
+            <div class="hud-label">Stamina</div>
+            <div class="vital-track">
+              <div class="vital-fill vital-fill-stamina" data-hud-stamina-fill></div>
+            </div>
+          </div>
+          <strong class="vital-value" data-hud-stamina></strong>
+        </div>
       </div>
       <div class="status-item">
         <div class="hud-label">Ammo</div>
@@ -48,12 +67,15 @@ export function createHud(parent: HTMLElement) {
     <section class="pause-overlay" data-hud-pause>
       <div class="pause-card">
         <h1 class="pause-title">Paused</h1>
-        <p class="pause-copy">Combat prototype online: aim, fire, reload, and survive the infected placeholders.</p>
-        <div class="settings-stub" aria-label="Settings preview">
-          <span>Audio: procedural</span>
-          <span>Visuals: low-poly horror</span>
-          <span>Motion: reduced HUD motion</span>
+        <p class="pause-copy">Route progress is held. Adjust volume, resume, or return to the main menu.</p>
+        <div class="pause-actions">
+          <button class="menu-button menu-button-primary" type="button" data-pause-resume>Back to Game</button>
+          <button class="menu-button" type="button" data-pause-main-menu>Main Menu</button>
         </div>
+        <label class="menu-slider pause-slider">
+          <span>Master Volume</span>
+          <input type="range" min="0" max="1" step="0.01" data-pause-volume />
+        </label>
       </div>
     </section>
     <section class="death-overlay" data-hud-death>
@@ -75,8 +97,14 @@ export function createHud(parent: HTMLElement) {
 
   const objective = requireElement(hud, "[data-hud-objective]");
   const health = requireElement(hud, "[data-hud-health]");
+  const healthFill = requireElement(hud, "[data-hud-health-fill]");
+  const stamina = requireElement(hud, "[data-hud-stamina]");
+  const staminaFill = requireElement(hud, "[data-hud-stamina-fill]");
   const ammo = requireElement(hud, "[data-hud-ammo]");
   const pause = requireElement(hud, "[data-hud-pause]");
+  const pauseResume = requireElement<HTMLButtonElement>(hud, "[data-pause-resume]");
+  const pauseMainMenu = requireElement<HTMLButtonElement>(hud, "[data-pause-main-menu]");
+  const pauseVolume = requireElement<HTMLInputElement>(hud, "[data-pause-volume]");
   const reticle = requireElement(hud, "[data-hud-reticle]");
   const prompt = requireElement(hud, "[data-hud-prompt]");
   const message = requireElement(hud, "[data-hud-message]");
@@ -90,6 +118,9 @@ export function createHud(parent: HTMLElement) {
   function update(state: HudState) {
     objective.textContent = state.objective;
     health.textContent = `${state.health}%`;
+    healthFill.style.width = `${clampPercent(state.health)}%`;
+    stamina.textContent = `${Math.round(state.stamina)}%`;
+    staminaFill.style.width = `${clampPercent(state.stamina)}%`;
     ammo.textContent = state.ammo;
     prompt.textContent = state.prompt;
     message.textContent = state.message;
@@ -107,6 +138,18 @@ export function createHud(parent: HTMLElement) {
 
   return {
     update,
+    setPauseHandlers(handlers: {
+      onResume: () => void;
+      onMainMenu: () => void;
+      onVolumeChange: (volume: number) => void;
+    }) {
+      pauseResume.onclick = handlers.onResume;
+      pauseMainMenu.onclick = handlers.onMainMenu;
+      pauseVolume.oninput = () => handlers.onVolumeChange(Number(pauseVolume.value));
+    },
+    setVolume(volume: number) {
+      pauseVolume.value = String(volume);
+    },
     setPaused(isPaused: boolean) {
       pause.classList.toggle("is-visible", isPaused);
     },
@@ -116,8 +159,12 @@ export function createHud(parent: HTMLElement) {
   };
 }
 
-function requireElement(parent: HTMLElement, selector: string) {
-  const element = parent.querySelector<HTMLElement>(selector);
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function requireElement<T extends HTMLElement = HTMLElement>(parent: HTMLElement, selector: string) {
+  const element = parent.querySelector<T>(selector);
 
   if (!element) {
     throw new Error(`Missing HUD element: ${selector}`);

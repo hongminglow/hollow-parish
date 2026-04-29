@@ -6,6 +6,10 @@ type EnemyVisual = {
   group: THREE.Group;
   body: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  leftArm: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  rightArm: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  leftLeg: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  rightLeg: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   weapon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   healthFill: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   warning: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
@@ -52,18 +56,38 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   const color = enemyColors[enemy.kind];
   const scale = enemy.kind === "boss" ? 1.65 : 1;
   const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(enemy.bodyRadius * 0.58, 0.9 * scale, 8, 14),
+    new THREE.BoxGeometry(enemy.bodyRadius * 0.92, 0.9 * scale, enemy.bodyRadius * 0.56),
     new THREE.MeshStandardMaterial({
       color,
       roughness: 0.9,
     }),
   );
+  const limbMaterial = new THREE.MeshStandardMaterial({
+    color: enemy.kind === "boss" ? 0x4a2b2c : 0x3f4937,
+    roughness: 0.93,
+  });
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(enemy.headRadius, 12, 10),
     new THREE.MeshStandardMaterial({
       color: 0xb9b08e,
       roughness: 0.82,
     }),
+  );
+  const leftArm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.14 * scale, 0.64 * scale, 0.14 * scale),
+    limbMaterial,
+  );
+  const rightArm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.14 * scale, 0.64 * scale, 0.14 * scale),
+    limbMaterial,
+  );
+  const leftLeg = new THREE.Mesh(
+    new THREE.BoxGeometry(0.16 * scale, 0.62 * scale, 0.16 * scale),
+    limbMaterial,
+  );
+  const rightLeg = new THREE.Mesh(
+    new THREE.BoxGeometry(0.16 * scale, 0.62 * scale, 0.16 * scale),
+    limbMaterial,
   );
   const weapon = new THREE.Mesh(
     new THREE.BoxGeometry(enemy.kind === "hook" ? 0.1 : 0.08, 0.52 * scale, 0.08),
@@ -93,7 +117,13 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   group.name = enemy.id;
   group.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
   body.position.y = 0.35 * scale;
+  body.rotation.x = 0.12;
   head.position.y = 1.1 * scale;
+  head.position.z = -0.1 * scale;
+  leftArm.position.set(-0.42 * scale, 0.48 * scale, -0.08);
+  rightArm.position.set(0.42 * scale, 0.48 * scale, -0.08);
+  leftLeg.position.set(-0.18 * scale, -0.08 * scale, 0.02);
+  rightLeg.position.set(0.18 * scale, -0.08 * scale, 0.02);
   weapon.position.set(0.48 * scale, 0.58 * scale, -0.14);
   weapon.rotation.z = -0.35;
   healthBack.position.y = 1.7 * scale;
@@ -103,14 +133,22 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   warning.visible = false;
   body.castShadow = true;
   head.castShadow = true;
+  leftArm.castShadow = true;
+  rightArm.castShadow = true;
+  leftLeg.castShadow = true;
+  rightLeg.castShadow = true;
   weapon.castShadow = true;
-  group.add(warning, body, head, weapon, healthBack, healthFill);
+  group.add(warning, body, head, leftArm, rightArm, leftLeg, rightLeg, weapon, healthBack, healthFill);
 
   return {
     enemy,
     group,
     body,
     head,
+    leftArm,
+    rightArm,
+    leftLeg,
+    rightLeg,
     weapon,
     healthFill,
     warning,
@@ -118,7 +156,7 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
 }
 
 function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
-  const { enemy, group, body, head, weapon, healthFill, warning } = visual;
+  const { enemy, group, body, head, leftArm, rightArm, leftLeg, rightLeg, weapon, healthFill, warning } = visual;
   const healthRatio = enemy.maxHealth > 0 ? enemy.health / enemy.maxHealth : 0;
   const bodyColor = getBodyColor(enemy);
   const movementBob =
@@ -139,6 +177,12 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
         : enemy.state === "staggered"
           ? 0.28
           : 0;
+  const stride =
+    enemy.state === "chase" ? Math.sin(elapsed * (enemy.kind === "hook" ? 9 : 6.6)) * 0.44 : 0;
+  leftLeg.rotation.x = stride;
+  rightLeg.rotation.x = -stride;
+  leftArm.rotation.x = enemy.state === "attackActive" ? -1.1 : -stride * 0.45 - 0.18;
+  rightArm.rotation.x = enemy.state === "attackActive" ? -0.95 : stride * 0.45 - 0.18;
   weapon.rotation.x = enemy.state === "attackActive" ? -0.9 : -0.25;
   weapon.visible = enemy.kind !== "infected" || enemy.state !== "idle";
   body.material.color.setHex(bodyColor);

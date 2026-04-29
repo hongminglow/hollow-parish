@@ -12,6 +12,16 @@ type BrowserWindowWithWebkitAudio = typeof window & {
 
 export function createGameAudio() {
   let context: AudioContext | null = null;
+  let masterVolume = 0.72;
+  let ambience:
+    | {
+        low: OscillatorNode;
+        high: OscillatorNode;
+        gain: GainNode;
+        tremolo: OscillatorNode;
+        tremoloGain: GainNode;
+      }
+    | null = null;
 
   function getContext() {
     if (context) {
@@ -37,6 +47,14 @@ export function createGameAudio() {
     }
   }
 
+  function outputGain(audioContext: AudioContext, gain: number) {
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = gain * masterVolume;
+    gainNode.connect(audioContext.destination);
+
+    return gainNode;
+  }
+
   function playTone({ frequency, duration, gain, type = "sine", slideTo }: ToneOptions) {
     const audioContext = getContext();
 
@@ -56,12 +74,99 @@ export function createGameAudio() {
     }
 
     gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(gain * masterVolume, now + 0.01);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
     oscillator.start(now);
     oscillator.stop(now + duration + 0.03);
+  }
+
+  function playNoise(duration: number, gain: number, filterFrequency: number) {
+    const audioContext = getContext();
+
+    if (!audioContext) {
+      return;
+    }
+
+    const sampleCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+    const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
+    const samples = buffer.getChannelData(0);
+
+    for (let index = 0; index < sampleCount; index += 1) {
+      samples[index] = Math.random() * 2 - 1;
+    }
+
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gainNode = outputGain(audioContext, gain);
+    const now = audioContext.currentTime;
+
+    source.buffer = buffer;
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(filterFrequency, now);
+    filter.Q.value = 2.8;
+    gainNode.gain.setValueAtTime(gain * masterVolume, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    source.connect(filter);
+    filter.connect(gainNode);
+    source.start(now);
+    source.stop(now + duration + 0.02);
+  }
+
+  function setVolume(volume: number) {
+    masterVolume = Math.max(0, Math.min(1, volume));
+
+    if (ambience && context) {
+      ambience.gain.gain.setTargetAtTime(0.034 * masterVolume, context.currentTime, 0.08);
+    }
+  }
+
+  function startAmbience() {
+    const audioContext = getContext();
+
+    if (!audioContext || ambience) {
+      return;
+    }
+
+    const low = audioContext.createOscillator();
+    const high = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const tremolo = audioContext.createOscillator();
+    const tremoloGain = audioContext.createGain();
+
+    low.type = "sine";
+    low.frequency.value = 46;
+    high.type = "triangle";
+    high.frequency.value = 91;
+    tremolo.frequency.value = 0.18;
+    tremoloGain.gain.value = 0.012;
+    gain.gain.value = 0.034 * masterVolume;
+    tremolo.connect(tremoloGain);
+    tremoloGain.connect(gain.gain);
+    low.connect(gain);
+    high.connect(gain);
+    gain.connect(audioContext.destination);
+    low.start();
+    high.start();
+    tremolo.start();
+    ambience = { low, high, gain, tremolo, tremoloGain };
+  }
+
+  function stopAmbience() {
+    if (!ambience) {
+      return;
+    }
+
+    ambience.low.stop();
+    ambience.high.stop();
+    ambience.tremolo.stop();
+    ambience.low.disconnect();
+    ambience.high.disconnect();
+    ambience.tremolo.disconnect();
+    ambience.tremoloGain.disconnect();
+    ambience.gain.disconnect();
+    ambience = null;
   }
 
   function playPair(primary: ToneOptions, secondary: ToneOptions) {
@@ -71,8 +176,16 @@ export function createGameAudio() {
 
   return {
     resume,
+    setVolume,
+    startAmbience,
+    stopAmbience,
     shot() {
-      playTone({ frequency: 190, slideTo: 68, duration: 0.08, gain: 0.13, type: "sawtooth" });
+      playNoise(0.045, 0.24, 1350);
+      playTone({ frequency: 120, slideTo: 52, duration: 0.11, gain: 0.18, type: "sawtooth" });
+      window.setTimeout(
+        () => playTone({ frequency: 60, slideTo: 38, duration: 0.12, gain: 0.08, type: "triangle" }),
+        18,
+      );
     },
     hit() {
       playTone({ frequency: 440, slideTo: 220, duration: 0.09, gain: 0.08, type: "square" });
@@ -114,6 +227,7 @@ export function createGameAudio() {
       );
     },
     dispose() {
+      stopAmbience();
       void context?.close();
       context = null;
     },

@@ -19,8 +19,21 @@ export function createPlayerView(scene: THREE.Scene) {
     color: 0xd7a647,
     roughness: 0.6,
   });
+  const clothMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2f3d36,
+    roughness: 0.9,
+  });
+  const skinMaterial = new THREE.MeshStandardMaterial({
+    color: 0xb8a987,
+    roughness: 0.82,
+  });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.85, 8, 16), bodyMaterial);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.78, 0.3), bodyMaterial);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMaterial);
+  const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.58, 0.14), clothMaterial);
+  const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.58, 0.14), clothMaterial);
+  const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.62, 0.16), clothMaterial);
+  const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.62, 0.16), clothMaterial);
   const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.22, 0.32), shoulderMaterial);
   const aimMarker = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.72), aimMaterial);
   const visor = new THREE.Mesh(
@@ -33,17 +46,28 @@ export function createPlayerView(scene: THREE.Scene) {
   );
 
   body.castShadow = true;
+  head.castShadow = true;
+  leftArm.castShadow = true;
+  rightArm.castShadow = true;
+  leftLeg.castShadow = true;
+  rightLeg.castShadow = true;
   shoulder.castShadow = true;
   aimMarker.castShadow = true;
   visor.castShadow = true;
   pack.castShadow = true;
+  body.position.set(0, 0.08, 0);
+  head.position.set(0, 0.72, -0.02);
+  leftArm.position.set(-0.38, 0.08, -0.04);
+  rightArm.position.set(0.38, 0.08, -0.04);
+  leftLeg.position.set(-0.15, -0.56, 0);
+  rightLeg.position.set(0.15, -0.56, 0);
   shoulder.position.set(0, 0.34, 0.03);
   aimMarker.position.set(0.38, 0.26, -0.4);
-  visor.position.set(0, 0.92, -0.24);
+  visor.position.set(0, 0.75, -0.22);
   pack.position.set(0, 0.2, 0.36);
   aimMarker.visible = false;
 
-  group.add(body, shoulder, aimMarker, visor, pack);
+  group.add(body, head, leftArm, rightArm, leftLeg, rightLeg, shoulder, aimMarker, visor, pack);
   scene.add(group);
 
   return {
@@ -68,14 +92,32 @@ export function createPlayerView(scene: THREE.Scene) {
       group.position.set(player.position.x, player.position.y + walkBob, player.position.z);
       group.rotation.y = player.yaw;
       body.rotation.x = lean;
+      head.rotation.x = player.isAiming ? -0.08 : 0;
       shoulder.rotation.x = player.isAiming ? -0.16 : 0;
       aimMarker.rotation.x = player.isAiming ? -0.05 : 0;
       aimMarker.visible = player.isAiming;
+      const stride =
+        player.movementState === "run"
+          ? Math.sin(animationTime * 12) * 0.48
+          : player.movementState === "walk"
+            ? Math.sin(animationTime * 7.5) * 0.28
+            : 0;
+      leftArm.rotation.x = player.isAiming ? -0.8 : -stride * 0.55;
+      rightArm.rotation.x = player.isAiming ? -0.92 : stride * 0.55;
+      leftLeg.rotation.x = stride;
+      rightLeg.rotation.x = -stride;
+      leftArm.position.z = player.isAiming ? -0.22 : -0.04;
+      rightArm.position.z = player.isAiming ? -0.28 : -0.04;
       group.scale.setScalar(player.isSprinting ? 1.04 : player.isDead ? 0.82 : 1);
     },
     dispose() {
       scene.remove(group);
       body.geometry.dispose();
+      head.geometry.dispose();
+      leftArm.geometry.dispose();
+      rightArm.geometry.dispose();
+      leftLeg.geometry.dispose();
+      rightLeg.geometry.dispose();
       shoulder.geometry.dispose();
       aimMarker.geometry.dispose();
       visor.geometry.dispose();
@@ -83,6 +125,8 @@ export function createPlayerView(scene: THREE.Scene) {
       bodyMaterial.dispose();
       shoulderMaterial.dispose();
       aimMaterial.dispose();
+      clothMaterial.dispose();
+      skinMaterial.dispose();
       disposeMaterial(visor.material);
       disposeMaterial(pack.material);
     },

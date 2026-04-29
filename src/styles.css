@@ -117,19 +117,87 @@ button {
   left: 20px;
   bottom: 20px;
   display: flex;
+  align-items: flex-end;
   gap: 18px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
 }
 
 .status-item {
-  min-width: 84px;
+  min-width: 94px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(243, 234, 217, 0.12);
 }
 
 .hud-value {
   margin-top: 4px;
   font-size: 18px;
   font-weight: 800;
+}
+
+.status-vitals {
+  display: grid;
+  min-width: min(340px, calc(100vw - 190px));
+  gap: 9px;
+}
+
+.vital-row {
+  display: grid;
+  grid-template-columns: 28px minmax(132px, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+}
+
+.vital-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(243, 234, 217, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.vital-icon-health {
+  color: #f0b45b;
+}
+
+.vital-icon-stamina {
+  color: #90b679;
+  font-size: 11px;
+}
+
+.vital-track {
+  height: 9px;
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 234, 217, 0.12);
+  border-radius: 999px;
+  background: rgba(3, 5, 5, 0.52);
+}
+
+.vital-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+  transition: width 120ms ease;
+}
+
+.vital-fill-health {
+  background: linear-gradient(90deg, #8f2f24, #e1a14b);
+}
+
+.vital-fill-stamina {
+  background: linear-gradient(90deg, #3f7c64, #a6c86d);
+}
+
+.vital-value {
+  color: var(--hud-text);
+  font-size: 13px;
+  text-align: right;
 }
 
 .prompt {
@@ -287,6 +355,125 @@ button {
   transition:
     opacity 160ms ease,
     visibility 160ms ease;
+}
+
+.main-menu {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center start;
+  padding: clamp(18px, 5vw, 72px);
+  background:
+    radial-gradient(circle at 78% 28%, rgba(151, 66, 42, 0.25), transparent 25rem),
+    radial-gradient(circle at 24% 76%, rgba(75, 100, 91, 0.2), transparent 24rem),
+    linear-gradient(100deg, rgba(5, 7, 7, 0.94), rgba(5, 7, 7, 0.78) 48%, rgba(5, 7, 7, 0.42));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+.main-menu.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.main-menu-card {
+  width: min(560px, calc(100vw - 36px));
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid rgba(239, 207, 143, 0.3);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(30, 24, 17, 0.9), rgba(8, 12, 12, 0.94)),
+    rgba(8, 12, 12, 0.94);
+  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.62);
+}
+
+.main-menu-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.main-menu-title {
+  max-width: 10ch;
+  margin: 8px 0 0;
+  color: #fff3d8;
+  font-size: clamp(44px, 8vw, 76px);
+  line-height: 0.92;
+}
+
+.main-menu-copy {
+  max-width: 48ch;
+  margin: 18px 0 0;
+  color: var(--hud-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.main-menu-actions,
+.pause-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.menu-button {
+  min-width: 140px;
+  padding: 11px 14px;
+  border: 1px solid rgba(239, 207, 143, 0.26);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--hud-text);
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu-button:hover:not(:disabled),
+.menu-button:focus-visible {
+  border-color: rgba(239, 207, 143, 0.64);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.menu-button-primary {
+  border-color: rgba(215, 166, 71, 0.74);
+  background: linear-gradient(135deg, #b66f34, #d7a647);
+  color: #170f08;
+}
+
+.menu-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.44;
+}
+
+.menu-slider {
+  display: grid;
+  gap: 9px;
+  margin-top: 22px;
+  color: var(--hud-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menu-slider input {
+  accent-color: var(--accent);
+}
+
+.main-menu-help {
+  margin-top: 18px;
+  color: rgba(243, 234, 217, 0.58);
+  font-size: 12px;
 }
 
 .death-overlay,
@@ -546,7 +733,16 @@ button {
   .status-strip {
     left: 12px;
     bottom: 12px;
+    width: calc(100vw - 24px);
     gap: 10px;
+  }
+
+  .status-vitals {
+    min-width: 0;
+  }
+
+  .vital-row {
+    grid-template-columns: 26px minmax(96px, 1fr) 40px;
   }
 
   .prompt {

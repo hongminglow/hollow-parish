@@ -14,6 +14,7 @@ const maxPitch = 0.62;
 const mouseSensitivity = 0.0024;
 const defaultDistance = 5.2;
 const aimDistance = 2.75;
+const indoorDistance = 3.15;
 const defaultFov = 60;
 const aimFov = 50;
 const targetHeight = 0.78;
@@ -33,11 +34,12 @@ export function createThirdPersonCamera(camera: THREE.PerspectiveCamera) {
 
   function applyLook(mouseDelta: { x: number; y: number }) {
     yaw -= mouseDelta.x * mouseSensitivity;
-    pitch = THREE.MathUtils.clamp(pitch - mouseDelta.y * mouseSensitivity, minPitch, maxPitch);
+    pitch = THREE.MathUtils.clamp(pitch + mouseDelta.y * mouseSensitivity, minPitch, maxPitch);
   }
 
   function update(params: CameraUpdateParams) {
-    const distance = params.isAiming ? aimDistance : defaultDistance;
+    const isIndoorRoute = params.target.z < -31 && params.target.z > -55;
+    const distance = params.isAiming ? aimDistance : isIndoorRoute ? indoorDistance : defaultDistance;
     const shoulderOffset = params.isAiming ? aimShoulderOffset : defaultShoulderOffset;
     const fov = params.isAiming ? aimFov : defaultFov;
     const yawForward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
@@ -46,7 +48,7 @@ export function createThirdPersonCamera(camera: THREE.PerspectiveCamera) {
     const horizontalDistance = Math.cos(pitch) * distance;
     const target = new THREE.Vector3(
       params.target.x,
-      params.target.y + targetHeight,
+      params.target.y + (isIndoorRoute ? 0.62 : targetHeight),
       params.target.z,
     );
     const desired = target
@@ -54,7 +56,7 @@ export function createThirdPersonCamera(camera: THREE.PerspectiveCamera) {
       .addScaledVector(yawForward, -horizontalDistance)
       .addScaledVector(yawRight, shoulderOffset);
 
-    desired.y += verticalOffset + 0.55;
+    desired.y += verticalOffset + (isIndoorRoute ? 0.34 : 0.55);
     lookTarget.copy(target).addScaledVector(yawRight, shoulderOffset * 0.46);
 
     const cameraDirection = desired.clone().sub(lookTarget);
