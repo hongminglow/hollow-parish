@@ -15,6 +15,10 @@ type DebugPanelState = {
   aliveEnemies: number;
   enemyAi: string;
   ammo: string;
+  renderCalls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
 };
 
 export function createDebugPanel(parent: HTMLElement) {
@@ -50,6 +54,8 @@ export function createDebugPanel(parent: HTMLElement) {
       `Enemies: ${state.aliveEnemies}`,
       `AI: ${state.enemyAi}`,
       `Ammo: ${state.ammo}`,
+      `Draw: ${state.renderCalls} calls / ${state.triangles} tris`,
+      `Memory: ${state.geometries} geo / ${state.textures} tex`,
       `Player: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
       "1-4: skip zones",
       "F3: debug",

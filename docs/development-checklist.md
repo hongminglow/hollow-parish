@@ -587,16 +587,16 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ### Functional QA
 
-- [ ] Player cannot leave map bounds.
-- [ ] Player cannot shoot without ammo.
-- [ ] Reload works only when reserve ammo exists.
-- [ ] Pickups cannot be collected twice.
-- [ ] Gates remain open after checkpoint reload.
-- [ ] Enemies cannot attack after death.
-- [ ] Dead enemies do not block progression.
-- [ ] Player death restores checkpoint state.
-- [ ] Boss arena cannot be skipped early.
-- [ ] Win state triggers only after boss defeat.
+- [x] Player cannot leave map bounds.
+- [x] Player cannot shoot without ammo.
+- [x] Reload works only when reserve ammo exists.
+- [x] Pickups cannot be collected twice.
+- [x] Gates remain open after checkpoint reload.
+- [x] Enemies cannot attack after death.
+- [x] Dead enemies do not block progression.
+- [x] Player death restores checkpoint state.
+- [x] Boss arena cannot be skipped early.
+- [x] Win state triggers only after boss defeat.
 
 ### Feel QA
 
@@ -616,8 +616,8 @@ Goal: stabilize the prototype into a playable end-to-end build.
 - [ ] Boss arena runs with boss, minions, particles, and HUD.
 - [ ] Restarting after death does not leak obvious memory.
 - [ ] Draw calls stay within budget.
-- [ ] Texture sizes stay within budget.
-- [ ] Device pixel ratio cap works.
+- [x] Texture sizes stay within budget.
+- [x] Device pixel ratio cap works.
 
 ### Browser QA
 
@@ -627,15 +627,15 @@ Goal: stabilize the prototype into a playable end-to-end build.
 - [ ] Window resize works.
 - [ ] Pointer lock works.
 - [ ] Pause and resume work.
-- [ ] Audio starts only after user gesture.
+- [x] Audio starts only after user gesture.
 
 ### Release Candidate
 
-- [ ] Build succeeds.
-- [ ] Preview build runs locally.
-- [ ] README setup instructions are accurate.
-- [ ] Known issues are documented.
-- [ ] Credits and asset licenses are documented.
+- [x] Build succeeds.
+- [x] Preview build runs locally.
+- [x] README setup instructions are accurate.
+- [x] Known issues are documented.
+- [x] Credits and asset licenses are documented.
 - [ ] Final playthrough completed from fresh load.
 
 ## Backlog And Stretch Goals
@@ -654,4 +654,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Visually playtest Phases 3-7 in browser, then start Phase 8 QA/balancing/release candidate.
+- [ ] Run the manual browser playtest from fresh load, then tune balance from findings.

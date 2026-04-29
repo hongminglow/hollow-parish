@@ -31,6 +31,7 @@ import {
   unlockFlagsForZone,
   type InteractionId,
 } from "../../game/simulation/interactions";
+import { enforceMapBounds } from "../../game/simulation/mapBounds";
 import { collectPickup, createPickupState, findNearbyPickup } from "../../game/simulation/pickups";
 import {
   createPlayerState,
@@ -199,6 +200,14 @@ export async function createGame(root: HTMLElement) {
       updateProgression(progression, player.position);
       setPlayerSpawn(player, progression.currentCheckpoint.position);
       showCombatMessage(lockMessage, 0.9);
+    }
+
+    const boundsMessage = enforceMapBounds(player);
+
+    if (boundsMessage) {
+      physics.resetPlayer(player.position);
+      updateProgression(progression, player.position);
+      showCombatMessage(boundsMessage, 0.8);
     }
 
     const arenaLockMessage = enforceBossArenaLock(player, bossEncounter);
@@ -657,6 +666,10 @@ export async function createGame(root: HTMLElement) {
       aliveEnemies: enemies.filter((enemy) => !enemy.isDead).length,
       enemyAi: summarizeEnemyAi(),
       ammo: getAmmoText(weapon),
+      renderCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      geometries: renderer.info.memory.geometries,
+      textures: renderer.info.memory.textures,
     });
 
     renderer.render(scene, camera);
