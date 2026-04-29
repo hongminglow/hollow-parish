@@ -63,6 +63,8 @@ Goal: create a stable Vite, TypeScript, and Three.js base project.
 - [x] Add interaction prompt placeholder.
 - [x] Add reticle element hidden by default.
 - [x] Add pause overlay placeholder.
+- [x] Add standalone title menu before game runtime loads.
+- [x] Add continue/settings title menu flow.
 
 ### Diagnostics
 
@@ -108,6 +110,7 @@ Goal: make movement and the third-person camera feel usable before building comb
 - [x] Add movement speed values.
 - [x] Add aim movement slowdown.
 - [x] Add sprint movement speed.
+- [x] Add jump action with stamina cost.
 
 ### Player Physics
 
@@ -119,6 +122,7 @@ Goal: make movement and the third-person camera feel usable before building comb
 - [x] Prevent player from passing through static colliders.
 - [x] Add player spawn position.
 - [x] Add respawn position support.
+- [x] Add jump movement integration.
 
 ### Third-Person Camera
 
@@ -215,6 +219,7 @@ Goal: create the complete graybox route from road to final boss arena.
 - [x] Add minion spawn markers.
 - [x] Add escape gate.
 - [x] Add arena static colliders.
+- [x] Add solid collision proxies for major scenery props.
 
 ### Zone Flow
 
@@ -644,8 +649,8 @@ Goal: stabilize the prototype into a playable end-to-end build.
 - [ ] Add kick or shove against staggered enemies.
 - [ ] Add destructible loot crates.
 - [ ] Add controller support.
-- [ ] Add simple settings menu.
-- [ ] Add save/load from local storage.
+- [x] Add simple settings menu.
+- [x] Add save/load from local storage.
 - [ ] Add enemy weak points beyond headshots.
 - [ ] Add improved enemy navigation or navmesh.
 - [ ] Add more notes and environmental storytelling.
@@ -654,4 +659,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Run the manual browser playtest from fresh load, then tune balance from findings.
+- [ ] Run dedicated GLB asset replacement pass for player, enemy variants, and boss.

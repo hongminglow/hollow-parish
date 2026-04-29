@@ -8,6 +8,10 @@ export function createMapBlockoutView(scene: THREE.Scene) {
   const routeGates = createRouteGates();
 
   for (const collider of mapBlockout.staticColliders) {
+    if (collider.name.includes("Collision")) {
+      continue;
+    }
+
     const mesh = createBoxMesh(
       collider.name,
       collider.position,
