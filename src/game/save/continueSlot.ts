@@ -3,6 +3,11 @@ import type { CheckpointSnapshot } from "../simulation/checkpoints";
 const continueSlotKey = "hollow-parish-continue-slot";
 
 export function saveContinueSlot(snapshot: CheckpointSnapshot) {
+  if (snapshot.progressionFlags.escapeGateUnlocked) {
+    clearContinueSlot();
+    return;
+  }
+
   localStorage.setItem(continueSlotKey, JSON.stringify(snapshot));
 }
 
@@ -14,9 +19,16 @@ export function loadContinueSlot(): CheckpointSnapshot | null {
   }
 
   try {
-    return JSON.parse(raw) as CheckpointSnapshot;
+    const snapshot = JSON.parse(raw) as CheckpointSnapshot;
+
+    if (snapshot.progressionFlags.escapeGateUnlocked) {
+      clearContinueSlot();
+      return null;
+    }
+
+    return snapshot;
   } catch {
-    localStorage.removeItem(continueSlotKey);
+    clearContinueSlot();
     return null;
   }
 }

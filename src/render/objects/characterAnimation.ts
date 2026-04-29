@@ -6,7 +6,8 @@ type PlayOptions = {
 };
 
 export type CharacterAnimationController = {
-  play: (candidates: string[], options?: PlayOptions) => void;
+  play: (candidates: string[], options?: PlayOptions) => boolean;
+  stop: (fadeSeconds?: number) => void;
   update: (deltaSeconds: number) => void;
   dispose: () => void;
 };
@@ -31,8 +32,12 @@ export function createCharacterAnimationController(
     play(candidates, options = {}) {
       const nextAction = findAction(actions, candidates);
 
-      if (!nextAction || nextAction === activeAction) {
-        return;
+      if (!nextAction) {
+        return false;
+      }
+
+      if (nextAction === activeAction) {
+        return true;
       }
 
       const fadeSeconds = options.fadeSeconds ?? 0.15;
@@ -46,6 +51,16 @@ export function createCharacterAnimationController(
       }
 
       activeAction = nextAction;
+      return true;
+    },
+    stop(fadeSeconds = 0.12) {
+      if (!activeAction) {
+        mixer.stopAllAction();
+        return;
+      }
+
+      activeAction.fadeOut(fadeSeconds);
+      activeAction = null;
     },
     update(deltaSeconds) {
       mixer.update(deltaSeconds);

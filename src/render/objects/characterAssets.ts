@@ -33,7 +33,7 @@ export const enemyCharacterAssets: Record<EnemyKind, CharacterAssetSlot> = {
     scale: 1,
     targetHeight: 1.82,
     yOffset: -0.95,
-    yawOffset: Math.PI,
+    yawOffset: -Math.PI / 2,
   },
   armored: {
     enabled: true,

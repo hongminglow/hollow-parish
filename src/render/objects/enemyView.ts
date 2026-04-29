@@ -353,7 +353,15 @@ function syncLoadedEnemyAnimation(
   }
 
   if (enemy.isDead) {
-    animationController.play(["death", "die"], { once: true, fadeSeconds: 0.08 });
+    const hasDeathAnimation = animationController.play(["death", "die"], {
+      once: true,
+      fadeSeconds: 0.08,
+    });
+
+    if (!hasDeathAnimation) {
+      animationController.stop(0.08);
+    }
+
     return;
   }
 

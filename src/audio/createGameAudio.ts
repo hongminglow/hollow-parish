@@ -10,6 +10,9 @@ type BrowserWindowWithWebkitAudio = typeof window & {
   webkitAudioContext?: typeof AudioContext;
 };
 
+const bossBassPattern = [55, 55, 0, 65, 55, 0, 73, 82, 55, 55, 0, 65, 98, 82, 73, 65];
+const bossLeadPattern = [0, 0, 110, 0, 0, 123, 0, 147, 0, 0, 110, 0, 165, 147, 123, 0];
+
 export function createGameAudio() {
   let context: AudioContext | null = null;
   let masterVolume = 0.72;
@@ -28,9 +31,11 @@ export function createGameAudio() {
     | null = null;
   let bossMusic:
     | {
-        low: OscillatorNode;
-        pulse: OscillatorNode;
+        drone: OscillatorNode;
+        tension: OscillatorNode;
+        filter: BiquadFilterNode;
         gain: GainNode;
+        beatTimer: number;
       }
     | null = null;
 
@@ -134,7 +139,7 @@ export function createGameAudio() {
     }
 
     if (bossMusic && context) {
-      bossMusic.gain.gain.setTargetAtTime(0.052 * masterVolume, context.currentTime, 0.08);
+      bossMusic.gain.gain.setTargetAtTime(0.04 * masterVolume, context.currentTime, 0.08);
     }
   }
 
@@ -217,21 +222,35 @@ export function createGameAudio() {
       return;
     }
 
-    const low = audioContext.createOscillator();
-    const pulse = audioContext.createOscillator();
+    const drone = audioContext.createOscillator();
+    const tension = audioContext.createOscillator();
+    const filter = audioContext.createBiquadFilter();
     const gain = audioContext.createGain();
+    let step = 0;
 
-    low.type = "sawtooth";
-    low.frequency.value = 57;
-    pulse.type = "triangle";
-    pulse.frequency.value = 86;
-    gain.gain.value = 0.052 * masterVolume;
-    low.connect(gain);
-    pulse.connect(gain);
+    drone.type = "sawtooth";
+    drone.frequency.value = 36.7;
+    tension.type = "triangle";
+    tension.frequency.value = 73.4;
+    filter.type = "lowpass";
+    filter.frequency.value = 980;
+    filter.Q.value = 0.9;
+    gain.gain.value = 0.04 * masterVolume;
+    drone.connect(filter);
+    tension.connect(filter);
+    filter.connect(gain);
     gain.connect(audioContext.destination);
-    low.start();
-    pulse.start();
-    bossMusic = { low, pulse, gain };
+    drone.start();
+    tension.start();
+
+    const beatTimer = window.setInterval(() => {
+      playBossMusicStep(step);
+      step = (step + 1) % bossBassPattern.length;
+    }, 190);
+
+    playBossMusicStep(step);
+    step = 1;
+    bossMusic = { drone, tension, filter, gain, beatTimer };
   }
 
   function stopBossMusic() {
@@ -239,12 +258,46 @@ export function createGameAudio() {
       return;
     }
 
-    bossMusic.low.stop();
-    bossMusic.pulse.stop();
-    bossMusic.low.disconnect();
-    bossMusic.pulse.disconnect();
+    window.clearInterval(bossMusic.beatTimer);
+    bossMusic.drone.stop();
+    bossMusic.tension.stop();
+    bossMusic.drone.disconnect();
+    bossMusic.tension.disconnect();
+    bossMusic.filter.disconnect();
     bossMusic.gain.disconnect();
     bossMusic = null;
+  }
+
+  function playBossMusicStep(step: number) {
+    const bassNote = bossBassPattern[step];
+    const leadNote = bossLeadPattern[step];
+
+    if (step % 4 === 0) {
+      playTone({ frequency: 52, slideTo: 34, duration: 0.16, gain: 0.11, type: "sine" });
+    }
+
+    if (step % 8 === 4) {
+      playNoise(0.055, 0.08, 1800);
+    }
+
+    if (bassNote > 0) {
+      playTone({
+        frequency: bassNote,
+        slideTo: bassNote * 0.92,
+        duration: 0.15,
+        gain: 0.065,
+        type: "sawtooth",
+      });
+    }
+
+    if (leadNote > 0) {
+      playTone({
+        frequency: leadNote,
+        duration: step % 8 === 6 ? 0.22 : 0.12,
+        gain: 0.032,
+        type: "square",
+      });
+    }
   }
 
   function playPair(primary: ToneOptions, secondary: ToneOptions) {
