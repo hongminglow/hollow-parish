@@ -15,7 +15,8 @@ npm run preview
 ## Known Issues
 
 - Browser visual playtest is still pending because this Codex thread has no exposed browser or screenshot automation tool.
-- Current characters, enemies, pickups, and environment dressing are procedural placeholders, not final GLB assets.
+- Character GLB runtime slots exist, but no final character GLB files are currently shipped.
+- Pickups and some environment dressing are still procedural placeholders, not final authored assets.
 - Audio is procedural Web Audio. There are no authored music, ambience, or licensed sound files yet.
 - Enemy navigation uses direct chase plus simple obstacle response, not a navmesh.
 - The production bundle is larger than Vite's default warning threshold because Three.js and Rapier are bundled together.
@@ -24,7 +25,8 @@ npm run preview
 
 - No third-party art, audio, textures, fonts, or GLB models are currently shipped.
 - Runtime dependencies are declared in `package.json`: Three.js and Rapier JS.
-- All current visuals are generated in code from Three.js primitive geometry and materials.
+- Character model filenames and import rules are documented in `public/assets/models/README.md`.
+- Current visuals fall back to Three.js primitive geometry and materials when GLB files are missing.
 - All current audio cues are generated at runtime with Web Audio oscillators.
 
 ## Release Gate

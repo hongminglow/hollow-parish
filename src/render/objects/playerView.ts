@@ -1,9 +1,20 @@
 import * as THREE from "three";
 import type { PlayerState } from "../../game/simulation/player";
+import { attachGltfAsset } from "../loaders/gltfAssetLoader";
+import {
+  createCharacterAnimationController,
+  type CharacterAnimationController,
+} from "./characterAnimation";
+import { playerCharacterAsset } from "./characterAssets";
 
 export function createPlayerView(scene: THREE.Scene) {
   const group = new THREE.Group();
   group.name = "PlayerPlaceholder";
+  const fallbackGroup = new THREE.Group();
+  fallbackGroup.name = "PlayerProceduralFallback";
+  let loadedModel: THREE.Object3D | null = null;
+  let animationController: CharacterAnimationController | null = null;
+  let isDisposed = false;
   let animationTime = 0;
   let shootKickRemaining = 0;
   let reloadPoseRemaining = 0;
@@ -70,8 +81,52 @@ export function createPlayerView(scene: THREE.Scene) {
   pack.position.set(0, 0.2, 0.36);
   aimMarker.visible = false;
 
-  group.add(body, head, leftArm, rightArm, leftLeg, rightLeg, shoulder, aimMarker, visor, pack);
+  fallbackGroup.add(
+    body,
+    head,
+    leftArm,
+    rightArm,
+    leftLeg,
+    rightLeg,
+    shoulder,
+    aimMarker,
+    visor,
+    pack,
+  );
+  group.add(fallbackGroup);
   scene.add(group);
+
+  if (playerCharacterAsset.enabled) {
+    void attachPlayerAsset();
+  }
+
+  async function attachPlayerAsset() {
+    const attachedAsset = await attachGltfAsset(group, {
+      url: playerCharacterAsset.url,
+      name: "PlayerGLB",
+      scale: playerCharacterAsset.scale,
+      targetHeight: playerCharacterAsset.targetHeight,
+      position: { y: playerCharacterAsset.yOffset },
+      rotationY: playerCharacterAsset.yawOffset,
+    });
+
+    if (!attachedAsset) {
+      return;
+    }
+
+    if (isDisposed) {
+      group.remove(attachedAsset.root);
+      return;
+    }
+
+    loadedModel = attachedAsset.root;
+    animationController = createCharacterAnimationController(
+      attachedAsset.root,
+      attachedAsset.animations,
+    );
+    fallbackGroup.visible = false;
+    group.name = "PlayerModelRoot";
+  }
 
   return {
     group,
@@ -106,6 +161,12 @@ export function createPlayerView(scene: THREE.Scene) {
 
       group.position.set(player.position.x, player.position.y + walkBob, player.position.z);
       group.rotation.y = player.yaw;
+      animationController?.update(deltaSeconds);
+      syncLoadedPlayerAnimation(player, animationController, {
+        damageFlashRemaining,
+        reloadPoseRemaining,
+        shootKickRemaining,
+      });
       bodyMaterial.color.setHex(damageFlashRemaining > 0 ? 0xbd4c32 : 0x5f7d72);
       body.rotation.x = lean;
       head.rotation.x = player.isAiming ? -0.08 : 0;
@@ -137,7 +198,11 @@ export function createPlayerView(scene: THREE.Scene) {
       group.scale.setScalar(player.isSprinting ? 1.04 : player.isDead ? 0.82 : 1);
     },
     dispose() {
+      isDisposed = true;
       scene.remove(group);
+      if (loadedModel) {
+        animationController?.dispose();
+      }
       body.geometry.dispose();
       head.geometry.dispose();
       leftArm.geometry.dispose();
@@ -157,6 +222,62 @@ export function createPlayerView(scene: THREE.Scene) {
       disposeMaterial(pack.material);
     },
   };
+}
+
+function syncLoadedPlayerAnimation(
+  player: PlayerState,
+  animationController: CharacterAnimationController | null,
+  feedback: {
+    damageFlashRemaining: number;
+    reloadPoseRemaining: number;
+    shootKickRemaining: number;
+  },
+) {
+  if (!animationController) {
+    return;
+  }
+
+  if (player.isDead) {
+    animationController.play(["death", "die"], { once: true, fadeSeconds: 0.08 });
+    return;
+  }
+
+  if (feedback.damageFlashRemaining > 0) {
+    animationController.play(["hit", "damage"], { once: true, fadeSeconds: 0.05 });
+    return;
+  }
+
+  if (feedback.reloadPoseRemaining > 0) {
+    animationController.play(["reload"], { once: true, fadeSeconds: 0.08 });
+    return;
+  }
+
+  if (feedback.shootKickRemaining > 0) {
+    animationController.play(["shoot", "fire"], { once: true, fadeSeconds: 0.04 });
+    return;
+  }
+
+  if (!player.isGrounded) {
+    animationController.play(["jump", "fall"], { fadeSeconds: 0.08 });
+    return;
+  }
+
+  if (player.movementState === "run") {
+    animationController.play(["run"], { fadeSeconds: 0.12 });
+    return;
+  }
+
+  if (player.movementState === "walk") {
+    animationController.play(["walk"], { fadeSeconds: 0.12 });
+    return;
+  }
+
+  if (player.movementState === "aim") {
+    animationController.play(["aimwalk", "aim", "idle"], { fadeSeconds: 0.12 });
+    return;
+  }
+
+  animationController.play(["idle"], { fadeSeconds: 0.18 });
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {

@@ -516,6 +516,7 @@ Goal: replace graybox presentation while preserving performance and readability.
 
 ### Character Art
 
+- [x] Add GLB runtime loader, asset manifest, optional animation playback, and procedural fallback slots.
 - [ ] Add player GLB.
 - [ ] Add standard infected GLB.
 - [ ] Add hook infected GLB.
@@ -659,4 +660,4 @@ Goal: stabilize the prototype into a playable end-to-end build.
 
 ## Current Next Item
 
-- [ ] Run dedicated GLB asset replacement pass for player, enemy variants, and boss.
+- [ ] Acquire or convert licensed character GLBs for player, enemy variants, and boss.

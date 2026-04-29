@@ -144,11 +144,12 @@ src/
 - [Development checklist](./docs/development-checklist.md)
 - [Manual playtest script](./docs/manual-playtest-script.md)
 - [Release candidate notes](./docs/release-candidate-notes.md)
+- [Character GLB slot contract](./public/assets/models/README.md)
 
 ## Current Status
 
-Phase 0 through Phase 8 implementation is in place. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy AI, collectable loot, key items, healing, a Tab inventory menu, route locks, timed interactions, objective updates, checkpoint restoration, a two-phase Bellkeeper boss encounter, boss health HUD, arena lock, charge and ground-slam attacks, minion pressure, escape gate unlock, win screen, procedural environment dressing, fog and lantern atmosphere, placeholder animation, procedural audio cues, responsive HUD polish, a settings stub, map-boundary enforcement, debug performance counters, and release-candidate documentation.
+Phase 0 through Phase 8 implementation is in place. The project has a Vite, TypeScript, and Three.js runtime shell with a DOM HUD, debug overlay, Rapier physics world, keyboard/mouse input, pointer lock, a kinematic player capsule, third-person follow/aim camera, one connected map route from Abandoned Road to Bell Tower Courtyard, placeholder enemies, handgun hitscan combat, ammo, reload, enemy damage, player damage, death, checkpoint restart, enemy AI, collectable loot, key items, healing, a Tab inventory menu, route locks, timed interactions, objective updates, checkpoint restoration, a two-phase Bellkeeper boss encounter, boss health HUD, arena lock, charge and ground-slam attacks, minion pressure, escape gate unlock, win screen, procedural environment dressing, fog and lantern atmosphere, placeholder animation, procedural audio cues, responsive HUD polish, a settings stub, map-boundary enforcement, debug performance counters, release-candidate documentation, and GLB runtime slots with procedural fallback for the player, enemy variants, and boss.
 
 Next task:
 
-- Run the manual browser playtest, then use findings for balancing and final release-candidate cleanup.
+- Acquire or convert licensed character GLBs for the player, enemy variants, and boss, then run the manual browser playtest for balancing and release-candidate cleanup.

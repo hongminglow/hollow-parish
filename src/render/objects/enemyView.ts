@@ -1,9 +1,24 @@
 import * as THREE from "three";
 import type { EnemyState } from "../../game/simulation/enemies";
+import { attachGltfAsset } from "../loaders/gltfAssetLoader";
+import {
+  createCharacterAnimationController,
+  type CharacterAnimationController,
+} from "./characterAnimation";
+import { enemyCharacterAssets } from "./characterAssets";
 
 type EnemyVisual = {
   enemy: EnemyState;
   group: THREE.Group;
+  fallbackGroup: THREE.Group;
+  loadedModel: THREE.Object3D | null;
+  animationController: CharacterAnimationController | null;
+  isDisposed: boolean;
+  facingYaw: number;
+  lastPosition: {
+    x: number;
+    z: number;
+  };
   body: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   leftArm: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
@@ -27,6 +42,7 @@ export function createEnemyView(scene: THREE.Scene, enemies: EnemyState[]) {
   const group = new THREE.Group();
   group.name = "EnemyCombatPlaceholders";
   const visuals = enemies.map(createEnemyVisual);
+  let previousElapsed = 0;
 
   for (const visual of visuals) {
     group.add(visual.group);
@@ -36,14 +52,22 @@ export function createEnemyView(scene: THREE.Scene, enemies: EnemyState[]) {
 
   return {
     sync(elapsed: number) {
+      const deltaSeconds = Math.max(0, elapsed - previousElapsed);
+      previousElapsed = elapsed;
+
       for (const visual of visuals) {
-        syncEnemyVisual(visual, elapsed);
+        syncEnemyVisual(visual, elapsed, deltaSeconds);
       }
     },
     dispose() {
+      for (const visual of visuals) {
+        visual.isDisposed = true;
+        visual.animationController?.dispose();
+      }
+
       scene.remove(group);
       group.traverse((node) => {
-        if (node instanceof THREE.Mesh) {
+        if (node instanceof THREE.Mesh && !hasRuntimeGltfAncestor(node)) {
           node.geometry.dispose();
           disposeMaterial(node.material);
         }
@@ -54,6 +78,8 @@ export function createEnemyView(scene: THREE.Scene, enemies: EnemyState[]) {
 
 function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   const group = new THREE.Group();
+  const fallbackGroup = new THREE.Group();
+  fallbackGroup.name = `${enemy.id}ProceduralFallback`;
   const color = enemyColors[enemy.kind];
   const scale = enemy.kind === "boss" ? 1.65 : 1;
   const body = new THREE.Mesh(
@@ -139,22 +165,21 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   leftLeg.castShadow = true;
   rightLeg.castShadow = true;
   weapon.castShadow = true;
-  group.add(
-    warning,
-    body,
-    head,
-    leftArm,
-    rightArm,
-    leftLeg,
-    rightLeg,
-    weapon,
-    healthBack,
-    healthFill,
-  );
+  group.add(warning, fallbackGroup, healthBack, healthFill);
+  fallbackGroup.add(body, head, leftArm, rightArm, leftLeg, rightLeg, weapon);
 
-  return {
+  const visual: EnemyVisual = {
     enemy,
     group,
+    fallbackGroup,
+    loadedModel: null,
+    animationController: null,
+    isDisposed: false,
+    facingYaw: 0,
+    lastPosition: {
+      x: enemy.position.x,
+      z: enemy.position.z,
+    },
     body,
     head,
     leftArm,
@@ -166,9 +191,43 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
     healthFill,
     warning,
   };
+
+  if (enemyCharacterAssets[enemy.kind].enabled) {
+    void attachEnemyAsset(visual);
+  }
+
+  return visual;
 }
 
-function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
+async function attachEnemyAsset(visual: EnemyVisual) {
+  const asset = enemyCharacterAssets[visual.enemy.kind];
+  const attachedAsset = await attachGltfAsset(visual.group, {
+    url: asset.url,
+    name: `${visual.enemy.kind}GLB`,
+    scale: asset.scale,
+    targetHeight: asset.targetHeight,
+    position: { y: asset.yOffset },
+    rotationY: asset.yawOffset,
+  });
+
+  if (!attachedAsset) {
+    return;
+  }
+
+  if (visual.isDisposed) {
+    visual.group.remove(attachedAsset.root);
+    return;
+  }
+
+  visual.loadedModel = attachedAsset.root;
+  visual.animationController = createCharacterAnimationController(
+    attachedAsset.root,
+    attachedAsset.animations,
+  );
+  visual.fallbackGroup.visible = false;
+}
+
+function syncEnemyVisual(visual: EnemyVisual, elapsed: number, deltaSeconds: number) {
   const {
     enemy,
     group,
@@ -194,14 +253,11 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
 
   group.visible = true;
   group.position.set(enemy.position.x, enemy.position.y + movementBob, enemy.position.z);
+  visual.animationController?.update(deltaSeconds);
+  syncLoadedEnemyAnimation(enemy, visual.animationController);
+  syncEnemyFacing(visual, deltaSeconds);
   group.rotation.z = enemy.isDead ? -Math.PI / 2 : 0;
-  group.rotation.y += enemy.isDead
-    ? 0
-    : enemy.state === "idle"
-      ? 0.002
-      : enemy.kind === "boss"
-        ? 0.004
-        : 0.007;
+  group.rotation.y = visual.facingYaw;
   healthBack.visible = !enemy.isDead;
   healthFill.visible = !enemy.isDead;
   warning.visible = false;
@@ -243,6 +299,67 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
   warning.material.opacity = enemy.state === "attackWindup" ? 0.78 : 0.42;
 }
 
+function syncEnemyFacing(visual: EnemyVisual, deltaSeconds: number) {
+  const dx = visual.enemy.position.x - visual.lastPosition.x;
+  const dz = visual.enemy.position.z - visual.lastPosition.z;
+  const movementDistance = Math.hypot(dx, dz);
+
+  visual.lastPosition.x = visual.enemy.position.x;
+  visual.lastPosition.z = visual.enemy.position.z;
+
+  if (visual.enemy.isDead || movementDistance < 0.001 || movementDistance > 2) {
+    return;
+  }
+
+  const targetYaw = Math.atan2(-dx, -dz);
+  visual.facingYaw = dampAngle(visual.facingYaw, targetYaw, 12, deltaSeconds);
+}
+
+function dampAngle(current: number, target: number, rate: number, deltaSeconds: number) {
+  const delta = wrapAngle(target - current);
+  return current + delta * Math.min(1, rate * deltaSeconds);
+}
+
+function wrapAngle(angle: number) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+function syncLoadedEnemyAnimation(
+  enemy: EnemyState,
+  animationController: CharacterAnimationController | null,
+) {
+  if (!animationController) {
+    return;
+  }
+
+  if (enemy.isDead) {
+    animationController.play(["death", "die"], { once: true, fadeSeconds: 0.08 });
+    return;
+  }
+
+  if (enemy.state === "attackWindup" || enemy.state === "attackActive") {
+    animationController.play(["attack", "melee"], { once: true, fadeSeconds: 0.06 });
+    return;
+  }
+
+  if (enemy.state === "staggered" || enemy.hitFlashRemaining > 0) {
+    animationController.play(["stagger", "hit", "damage"], { once: true, fadeSeconds: 0.06 });
+    return;
+  }
+
+  if (enemy.state === "chase") {
+    animationController.play(["run", "walk"], { fadeSeconds: 0.12 });
+    return;
+  }
+
+  if (enemy.state === "alert") {
+    animationController.play(["alert", "idle"], { fadeSeconds: 0.12 });
+    return;
+  }
+
+  animationController.play(["idle"], { fadeSeconds: 0.18 });
+}
+
 function getBodyColor(enemy: EnemyState) {
   if (enemy.hitFlashRemaining > 0) {
     return 0xded4b4;
@@ -273,4 +390,18 @@ function disposeMaterial(material: THREE.Material | THREE.Material[]) {
   }
 
   material.dispose();
+}
+
+function hasRuntimeGltfAncestor(node: THREE.Object3D) {
+  let current: THREE.Object3D | null = node;
+
+  while (current) {
+    if (current.userData.skipRuntimeDispose) {
+      return true;
+    }
+
+    current = current.parent;
+  }
+
+  return false;
 }
