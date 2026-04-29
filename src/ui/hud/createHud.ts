@@ -5,6 +5,11 @@ type HudState = {
   ammo: string;
   prompt: string;
   message: string;
+  interaction: {
+    isVisible: boolean;
+    label: string;
+    progress: number;
+  };
   isDead: boolean;
   hasWon: boolean;
   stats: {
@@ -56,6 +61,15 @@ export function createHud(parent: HTMLElement) {
       <div class="status-item">
         <div class="hud-label">Ammo</div>
         <div class="hud-value" data-hud-ammo></div>
+      </div>
+    </section>
+    <section class="interaction-progress" data-hud-interaction-progress aria-live="polite">
+      <div class="interaction-progress-top">
+        <span data-hud-interaction-label></span>
+        <strong data-hud-interaction-percent></strong>
+      </div>
+      <div class="interaction-progress-track">
+        <div class="interaction-progress-fill" data-hud-interaction-fill></div>
       </div>
     </section>
     <div class="prompt" data-hud-prompt></div>
@@ -123,6 +137,10 @@ export function createHud(parent: HTMLElement) {
   const reticle = requireElement(hud, "[data-hud-reticle]");
   const prompt = requireElement(hud, "[data-hud-prompt]");
   const message = requireElement(hud, "[data-hud-message]");
+  const interaction = requireElement(hud, "[data-hud-interaction-progress]");
+  const interactionLabel = requireElement(hud, "[data-hud-interaction-label]");
+  const interactionPercent = requireElement(hud, "[data-hud-interaction-percent]");
+  const interactionFill = requireElement(hud, "[data-hud-interaction-fill]");
   const death = requireElement(hud, "[data-hud-death]");
   const boss = requireElement(hud, "[data-hud-boss]");
   const bossLabel = requireElement(hud, "[data-hud-boss-label]");
@@ -145,6 +163,10 @@ export function createHud(parent: HTMLElement) {
     prompt.textContent = state.prompt;
     message.textContent = state.message;
     message.classList.toggle("is-visible", state.message.length > 0);
+    interaction.classList.toggle("is-visible", state.interaction.isVisible);
+    interactionLabel.textContent = state.interaction.label;
+    interactionPercent.textContent = `${Math.round(clampPercent(state.interaction.progress))}%`;
+    interactionFill.style.width = `${clampPercent(state.interaction.progress)}%`;
     death.classList.toggle("is-visible", state.isDead);
     boss.classList.toggle("is-visible", state.boss.isVisible);
     bossLabel.textContent = state.boss.label;

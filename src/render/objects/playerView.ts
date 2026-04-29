@@ -93,6 +93,7 @@ export function createPlayerView(scene: THREE.Scene) {
     visor,
     pack,
   );
+  fallbackGroup.visible = !playerCharacterAsset.enabled;
   group.add(fallbackGroup);
   scene.add(group);
 
@@ -111,6 +112,10 @@ export function createPlayerView(scene: THREE.Scene) {
     });
 
     if (!attachedAsset) {
+      if (!isDisposed) {
+        fallbackGroup.visible = true;
+      }
+
       return;
     }
 

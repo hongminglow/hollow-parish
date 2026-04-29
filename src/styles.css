@@ -79,6 +79,7 @@ button {
 .objective-chip,
 .status-strip,
 .prompt,
+.interaction-progress,
 .combat-message,
 .debug-panel,
 .error-panel {
@@ -211,6 +212,65 @@ button {
   color: var(--hud-muted);
   font-size: 13px;
   text-align: center;
+}
+
+.interaction-progress {
+  position: absolute;
+  left: 50%;
+  bottom: 122px;
+  width: min(370px, calc(100vw - 40px));
+  padding: 11px 13px 12px;
+  transform: translateX(-50%) translateY(8px);
+  border-radius: 15px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
+}
+
+.interaction-progress.is-visible {
+  transform: translateX(-50%);
+  opacity: 1;
+  visibility: visible;
+}
+
+.interaction-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--hud-text);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.interaction-progress-top strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.interaction-progress-track {
+  height: 10px;
+  margin-top: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 234, 217, 0.12);
+  border-radius: 999px;
+  background: rgba(3, 5, 5, 0.58);
+}
+
+.interaction-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(90deg, #8f4a27, #d7a647);
+  box-shadow: 0 0 22px rgba(215, 166, 71, 0.32);
+  transition: width 90ms linear;
 }
 
 .reticle {
@@ -374,6 +434,90 @@ button {
   transition:
     opacity 180ms ease,
     visibility 180ms ease;
+}
+
+.game-loading-overlay,
+.main-menu,
+.pause-overlay,
+.death-overlay,
+.win-overlay {
+  cursor: default;
+}
+
+.game-loading-overlay {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center start;
+  padding: clamp(18px, 5vw, 72px);
+  background:
+    radial-gradient(circle at 72% 34%, rgba(151, 66, 42, 0.24), transparent 26rem),
+    radial-gradient(circle at 22% 78%, rgba(75, 100, 91, 0.2), transparent 24rem),
+    linear-gradient(108deg, rgba(5, 7, 7, 0.98), rgba(9, 12, 12, 0.9) 54%, rgba(5, 7, 7, 0.66));
+}
+
+.game-loading-card {
+  width: min(520px, calc(100vw - 36px));
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid rgba(239, 207, 143, 0.3);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(29, 23, 16, 0.92), rgba(8, 12, 12, 0.96)),
+    rgba(8, 12, 12, 0.94);
+  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.62);
+}
+
+.game-loading-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.game-loading-title {
+  max-width: 12ch;
+  margin: 8px 0 0;
+  color: #fff3d8;
+  font-size: clamp(38px, 7vw, 64px);
+  line-height: 0.94;
+}
+
+.game-loading-copy {
+  min-height: 1.6em;
+  margin: 18px 0 0;
+  color: var(--hud-muted);
+  font-size: 15px;
+}
+
+.game-loading-track {
+  height: 12px;
+  margin-top: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 234, 217, 0.14);
+  border-radius: 999px;
+  background: rgba(3, 5, 5, 0.62);
+}
+
+.game-loading-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24), transparent 32%),
+    linear-gradient(90deg, #7b3f25, #d7a647);
+  box-shadow: 0 0 24px rgba(215, 166, 71, 0.34);
+  transition: width 180ms ease;
+}
+
+.game-loading-percent {
+  display: block;
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 18px;
+  letter-spacing: 0.08em;
 }
 
 .main-menu.is-visible {
@@ -780,6 +924,11 @@ button {
   .prompt {
     bottom: 78px;
     min-width: 0;
+    width: calc(100vw - 24px);
+  }
+
+  .interaction-progress {
+    bottom: 128px;
     width: calc(100vw - 24px);
   }
 

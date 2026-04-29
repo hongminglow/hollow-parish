@@ -80,6 +80,7 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   const group = new THREE.Group();
   const fallbackGroup = new THREE.Group();
   fallbackGroup.name = `${enemy.id}ProceduralFallback`;
+  const assetSlot = enemyCharacterAssets[enemy.kind];
   const color = enemyColors[enemy.kind];
   const scale = enemy.kind === "boss" ? 1.65 : 1;
   const body = new THREE.Mesh(
@@ -167,6 +168,7 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   weapon.castShadow = true;
   group.add(warning, fallbackGroup, healthBack, healthFill);
   fallbackGroup.add(body, head, leftArm, rightArm, leftLeg, rightLeg, weapon);
+  fallbackGroup.visible = !assetSlot.enabled;
 
   const visual: EnemyVisual = {
     enemy,
@@ -192,7 +194,7 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
     warning,
   };
 
-  if (enemyCharacterAssets[enemy.kind].enabled) {
+  if (assetSlot.enabled) {
     void attachEnemyAsset(visual);
   }
 
@@ -211,6 +213,10 @@ async function attachEnemyAsset(visual: EnemyVisual) {
   });
 
   if (!attachedAsset) {
+    if (!visual.isDisposed) {
+      visual.fallbackGroup.visible = true;
+    }
+
     return;
   }
 
@@ -272,6 +278,7 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number, deltaSeconds: num
     weapon.visible = false;
     body.material.color.setHex(0x352d29);
     head.material.color.setHex(0x4a4036);
+    snapDeadVisualToGround(visual);
     return;
   }
 
@@ -297,6 +304,19 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number, deltaSeconds: num
   healthFill.position.x = -0.43 * (1 - healthRatio);
   warning.visible = enemy.state === "attackWindup" || enemy.state === "attackActive";
   warning.material.opacity = enemy.state === "attackWindup" ? 0.78 : 0.42;
+}
+
+function snapDeadVisualToGround(visual: EnemyVisual) {
+  const corpseRoot = visual.loadedModel ?? visual.fallbackGroup;
+
+  corpseRoot.updateWorldMatrix(true, true);
+  const bounds = new THREE.Box3().setFromObject(corpseRoot);
+
+  if (!Number.isFinite(bounds.min.y)) {
+    return;
+  }
+
+  visual.group.position.y += -0.28 - bounds.min.y;
 }
 
 function syncEnemyFacing(visual: EnemyVisual, deltaSeconds: number) {

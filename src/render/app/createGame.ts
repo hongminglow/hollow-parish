@@ -61,6 +61,8 @@ import { createDebugPanel } from "../../diagnostics/createDebugPanel";
 import { createPhysicsWorld } from "../../physics/world";
 import { createCombatFeedback } from "../effects/combatFeedback";
 import { createThirdPersonCamera } from "../cameras/thirdPersonCamera";
+import { loadGltfAsset } from "../loaders/gltfAssetLoader";
+import { enemyCharacterAssets, playerCharacterAsset } from "../objects/characterAssets";
 import { createEnemyView } from "../objects/enemyView";
 import { createEnvironmentPolishView } from "../objects/environmentPolishView";
 import { createMapBlockoutView } from "../objects/mapBlockoutView";
@@ -75,6 +77,17 @@ import { createScene } from "./createScene";
 
 const fixedStep = 1 / 60;
 const maxAccumulatedTime = fixedStep * 5;
+
+type CharacterPreloadItem = {
+  label: string;
+  url: string;
+};
+
+type LoadingProgress = {
+  completed: number;
+  total: number;
+  label: string;
+};
 
 type CreateGameOptions = {
   startMode: "new" | "continue";
@@ -97,6 +110,14 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
   const bossEncounter = createBossEncounterState();
   const pickups = createPickupState();
   const progression = createProgressionState();
+  const loadingOverlay = createGameLoadingOverlay(shell);
+
+  try {
+    await preloadCharacterAssets(enemies, loadingOverlay.setProgress);
+  } finally {
+    loadingOverlay.dispose();
+  }
+
   const physics = await createPhysicsWorld(player.spawnPosition, mapBlockout.staticColliders);
   const scene = createScene();
   const camera = createCamera();
@@ -138,6 +159,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     total: number;
     startHealth: number;
   } | null = null;
+  let wasWon = false;
   let checkpointSnapshot: CheckpointSnapshot = createCheckpointSnapshot(
     weapon,
     inventory,
@@ -185,8 +207,8 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     hud.setPaused(isPaused);
     audio.ui();
 
-    if (isPaused && document.pointerLockElement) {
-      document.exitPointerLock();
+    if (isPaused) {
+      releasePointerLock();
     }
   }
 
@@ -220,10 +242,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
   function returnToMainMenu() {
     audio.stopBossMusic();
     audio.stopAmbience();
-
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
+    releasePointerLock();
 
     options.onReturnToMainMenu();
   }
@@ -391,8 +410,8 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     isInventoryOpen = nextOpen;
     audio.ui();
 
-    if (isInventoryOpen && document.pointerLockElement) {
-      document.exitPointerLock();
+    if (isInventoryOpen) {
+      releasePointerLock();
     }
   }
 
@@ -496,10 +515,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     }
 
     if (activeInteraction) {
-      const progress = Math.round(
-        ((activeInteraction.total - activeInteraction.remaining) / activeInteraction.total) * 100,
-      );
-      return `Hold E: ${activeInteraction.label} ${progress}%`;
+      return `Hold E: ${activeInteraction.label}`;
     }
 
     const pickup = findNearbyPickup(pickups, player.position);
@@ -700,6 +716,12 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     const hasWon = progression.flags.escapeGateUnlocked;
     const isGameBlocked = isPaused || isInventoryOpen || hasWon;
 
+    if (hasWon && !wasWon) {
+      releasePointerLock();
+    }
+
+    wasWon = hasWon;
+
     if (!isGameBlocked) {
       cameraController.applyLook(frameInput.mouseDelta);
     }
@@ -769,6 +791,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
       objective: getCurrentObjective(progression),
       prompt: getPromptText(),
       message: combatMessage,
+      interaction: getInteractionHudState(),
       isDead: player.isDead,
       hasWon,
       stats: {
@@ -817,6 +840,31 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     animationFrame = requestAnimationFrame(render);
   }
 
+  function getInteractionHudState() {
+    if (!activeInteraction) {
+      return {
+        isVisible: false,
+        label: "",
+        progress: 0,
+      };
+    }
+
+    return {
+      isVisible: true,
+      label: activeInteraction.label,
+      progress:
+        ((activeInteraction.total - activeInteraction.remaining) / activeInteraction.total) * 100,
+    };
+  }
+
+  function releasePointerLock() {
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+
+    renderer.domElement.blur();
+  }
+
   function summarizeEnemyAi() {
     const counts = enemies.reduce<Record<string, number>>((summary, enemy) => {
       summary[enemy.state] = (summary[enemy.state] ?? 0) + 1;
@@ -857,4 +905,132 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     start,
     dispose,
   };
+}
+
+function createGameLoadingOverlay(parent: HTMLElement) {
+  const overlay = document.createElement("section");
+  overlay.className = "game-loading-overlay";
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = `
+    <div class="game-loading-card">
+      <div class="game-loading-kicker">Hollow Parish</div>
+      <h1 class="game-loading-title">Preparing the parish</h1>
+      <p class="game-loading-copy" data-loading-label>Loading survivor and infected rigs</p>
+      <div class="game-loading-track" aria-label="Loading progress">
+        <div class="game-loading-fill" data-loading-fill></div>
+      </div>
+      <strong class="game-loading-percent" data-loading-percent>0%</strong>
+    </div>
+  `;
+  parent.append(overlay);
+
+  const label = requireOverlayElement(overlay, "[data-loading-label]");
+  const fill = requireOverlayElement(overlay, "[data-loading-fill]");
+  const percent = requireOverlayElement(overlay, "[data-loading-percent]");
+
+  function setProgress(progress: LoadingProgress) {
+    const progressPercent =
+      progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 100;
+
+    fill.style.width = `${Math.max(0, Math.min(100, progressPercent))}%`;
+    percent.textContent = `${progressPercent}%`;
+    label.textContent = progress.label;
+  }
+
+  setProgress({
+    completed: 0,
+    total: 1,
+    label: "Loading survivor and infected rigs",
+  });
+
+  return {
+    setProgress,
+    dispose() {
+      overlay.remove();
+    },
+  };
+}
+
+async function preloadCharacterAssets(
+  enemies: ReturnType<typeof createEnemies>,
+  onProgress: (progress: LoadingProgress) => void,
+) {
+  const items = getCharacterPreloadItems(enemies);
+  const total = items.length;
+
+  if (total === 0) {
+    onProgress({
+      completed: 1,
+      total: 1,
+      label: "No character GLBs enabled",
+    });
+    return;
+  }
+
+  let completed = 0;
+  onProgress({
+    completed,
+    total,
+    label: "Loading character GLBs",
+  });
+
+  await Promise.all(
+    items.map(async (item) => {
+      await loadGltfAsset(item.url);
+      completed += 1;
+      onProgress({
+        completed,
+        total,
+        label: completed === total ? "Assets ready" : `Loaded ${item.label}`,
+      });
+    }),
+  );
+}
+
+function getCharacterPreloadItems(enemies: ReturnType<typeof createEnemies>) {
+  const items: CharacterPreloadItem[] = [];
+  const seenUrls = new Set<string>();
+  const pushUnique = (item: CharacterPreloadItem) => {
+    if (seenUrls.has(item.url)) {
+      return;
+    }
+
+    seenUrls.add(item.url);
+    items.push(item);
+  };
+
+  if (playerCharacterAsset.enabled) {
+    pushUnique({
+      label: "Player",
+      url: playerCharacterAsset.url,
+    });
+  }
+
+  for (const enemy of enemies) {
+    const asset = enemyCharacterAssets[enemy.kind];
+
+    if (!asset.enabled) {
+      continue;
+    }
+
+    pushUnique({
+      label: enemy.kind === "boss" ? "Bellkeeper" : `${enemy.kind} infected`,
+      url: asset.url,
+    });
+  }
+
+  return items;
+}
+
+function requireOverlayElement<T extends HTMLElement = HTMLElement>(
+  parent: HTMLElement,
+  selector: string,
+) {
+  const element = parent.querySelector<T>(selector);
+
+  if (!element) {
+    throw new Error(`Missing loading overlay element: ${selector}`);
+  }
+
+  return element;
 }
