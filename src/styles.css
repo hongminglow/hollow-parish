@@ -543,6 +543,10 @@ button {
   line-height: 1.6;
 }
 
+.win-menu-button {
+  margin-top: 22px;
+}
+
 .inventory-menu {
   pointer-events: auto;
   position: absolute;

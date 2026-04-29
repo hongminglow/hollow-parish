@@ -24,6 +24,9 @@ export type ShotResult =
       hitPoint: Vec3;
     };
 
+const bodyHitForgiveness = 0.18;
+const headHitForgiveness = 0.07;
+
 export function resolveHitscanShot(
   weapon: WeaponState,
   enemies: EnemyState[],
@@ -83,12 +86,12 @@ function findClosestEnemyHit(enemies: EnemyState[], ray: Ray, maxDistance: numbe
     const headHit = intersectSphere(
       ray,
       { x: enemy.position.x, y: enemy.position.y + 0.82, z: enemy.position.z },
-      enemy.headRadius,
+      enemy.headRadius + headHitForgiveness,
     );
     const bodyHit = intersectSphere(
       ray,
       { x: enemy.position.x, y: enemy.position.y + 0.25, z: enemy.position.z },
-      enemy.bodyRadius,
+      enemy.bodyRadius + bodyHitForgiveness,
     );
     const candidate =
       headHit !== null && headHit <= maxDistance

@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import { mapBlockout, type MapVisualSpec } from "../../game/content/mapBlockout";
+import type { ProgressionFlags } from "../../game/simulation/progression";
 
 export function createMapBlockoutView(scene: THREE.Scene) {
   const group = new THREE.Group();
   group.name = "Phase2MapBlockout";
+  const routeGates = createRouteGates();
 
   for (const collider of mapBlockout.staticColliders) {
     const mesh = createBoxMesh(
@@ -38,9 +40,15 @@ export function createMapBlockoutView(scene: THREE.Scene) {
     group.add(light);
   }
 
+  group.add(routeGates.group);
   scene.add(group);
 
   return {
+    sync(flags: ProgressionFlags) {
+      routeGates.villageGate.visible = !flags.villageGateUnlocked;
+      routeGates.millGate.visible = !flags.millCrankTurned;
+      routeGates.bellGate.visible = !flags.chapelEmblemPlaced;
+    },
     dispose() {
       scene.remove(group);
       group.traverse((node) => {
@@ -55,6 +63,61 @@ export function createMapBlockoutView(scene: THREE.Scene) {
       });
     },
   };
+}
+
+function createRouteGates() {
+  const group = new THREE.Group();
+  const gateMaterial = new THREE.MeshStandardMaterial({
+    color: 0x281a12,
+    roughness: 0.88,
+    metalness: 0.04,
+  });
+  const ironMaterial = new THREE.MeshStandardMaterial({
+    color: 0x191817,
+    roughness: 0.72,
+    metalness: 0.22,
+  });
+  const villageGate = createGateMesh("VillageRouteGate", 4.2, 2.35, gateMaterial, ironMaterial);
+  const millGate = createGateMesh("MillMechanismGate", 2.45, 2.05, gateMaterial, ironMaterial);
+  const bellGate = createGateMesh("BellTowerRouteGate", 3.4, 2.45, gateMaterial, ironMaterial);
+
+  villageGate.position.set(0, 1.12, -1.2);
+  millGate.position.set(0, 1.02, -28.18);
+  bellGate.position.set(0, 1.18, -53.7);
+  group.add(villageGate, millGate, bellGate);
+
+  return {
+    group,
+    villageGate,
+    millGate,
+    bellGate,
+  };
+}
+
+function createGateMesh(
+  name: string,
+  width: number,
+  height: number,
+  gateMaterial: THREE.MeshStandardMaterial,
+  ironMaterial: THREE.MeshStandardMaterial,
+) {
+  const gate = new THREE.Group();
+  const left = new THREE.Mesh(new THREE.BoxGeometry(width * 0.44, height, 0.16), gateMaterial);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(width * 0.44, height, 0.16), gateMaterial);
+  const braceA = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.2), ironMaterial);
+  const braceB = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.2), ironMaterial);
+
+  gate.name = name;
+  left.position.x = -width * 0.23;
+  right.position.x = width * 0.23;
+  braceA.position.y = height * 0.22;
+  braceB.position.y = -height * 0.22;
+  left.castShadow = true;
+  right.castShadow = true;
+  braceA.castShadow = true;
+  braceB.castShadow = true;
+  gate.add(left, right, braceA, braceB);
+  return gate;
 }
 
 function createVisualObject(visual: MapVisualSpec) {

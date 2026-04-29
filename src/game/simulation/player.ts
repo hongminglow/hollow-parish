@@ -11,6 +11,7 @@ export type PlayerMoveIntent = {
   cameraYaw: number;
   isAiming: boolean;
   isSprinting: boolean;
+  wantsJump: boolean;
   deltaSeconds: number;
 };
 
@@ -42,6 +43,8 @@ const gravity = -20;
 const maxStamina = 100;
 const staminaDrainPerSecond = 23;
 const staminaRecoverPerSecond = 18;
+const jumpVelocity = 6.2;
+const jumpStaminaCost = 12;
 
 export function createPlayerState(spawnPosition: Vec3): PlayerState {
   return {
@@ -72,6 +75,8 @@ export function updatePlayerMoveIntent(player: PlayerState, intent: PlayerMoveIn
   const hasMoveInput = intent.movementAxis.x !== 0 || intent.movementAxis.z !== 0;
   const canSprint = intent.isSprinting && hasMoveInput && !intent.isAiming && player.stamina > 2;
   const speed = intent.isAiming ? aimSpeed : canSprint ? sprintSpeed : walkSpeed;
+  const canJump =
+    intent.wantsJump && player.isGrounded && !intent.isAiming && player.stamina >= jumpStaminaCost;
   const forward = {
     x: -Math.sin(intent.cameraYaw),
     z: -Math.cos(intent.cameraYaw),
@@ -100,9 +105,15 @@ export function updatePlayerMoveIntent(player: PlayerState, intent: PlayerMoveIn
         : "idle";
   player.velocity.x = moveX * speed;
   player.velocity.z = moveZ * speed;
-  player.velocity.y = player.isGrounded
-    ? Math.min(player.velocity.y, -0.5)
-    : player.velocity.y + gravity * intent.deltaSeconds;
+
+  if (canJump) {
+    player.velocity.y = jumpVelocity;
+    player.stamina = Math.max(0, player.stamina - jumpStaminaCost);
+  } else {
+    player.velocity.y = player.isGrounded
+      ? Math.min(player.velocity.y, -0.5)
+      : player.velocity.y + gravity * intent.deltaSeconds;
+  }
 
   if (intent.isAiming) {
     player.yaw = intent.cameraYaw;

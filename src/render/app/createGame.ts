@@ -148,6 +148,7 @@ export async function createGame(root: HTMLElement) {
   hud.setPauseHandlers({
     onResume: () => setPaused(false),
     onMainMenu: openMainMenu,
+    onWinMainMenu: openMainMenu,
     onVolumeChange: setVolume,
   });
   updateMainMenu();
@@ -304,7 +305,7 @@ export async function createGame(root: HTMLElement) {
     showCombatMessage(`Checkpoint: ${progression.currentCheckpoint.name}`, 1.2);
   }
 
-  function fixedUpdate(deltaSeconds: number, inputState: InputFrame) {
+  function fixedUpdate(deltaSeconds: number, inputState: InputFrame, wantsJump: boolean) {
     updatePlayerTimers(player, deltaSeconds);
     const enemyEvents = updateEnemies(enemies, player, mapBlockout.staticColliders, deltaSeconds);
 
@@ -313,6 +314,7 @@ export async function createGame(root: HTMLElement) {
       cameraYaw: cameraController.getYaw(),
       isAiming: inputState.isHeld("aim"),
       isSprinting: inputState.isHeld("sprint"),
+      wantsJump,
       deltaSeconds,
     });
     const physicsResult = physics.movePlayer(desiredTranslation, deltaSeconds);
@@ -546,7 +548,7 @@ export async function createGame(root: HTMLElement) {
     }
 
     return frameInput.pointerLocked
-      ? "Aim + left click fire | E interact | H heal | Tab inventory"
+      ? "Space jump | Aim + left click fire | E interact | H heal | Tab inventory"
       : "Click the canvas to lock pointer. Follow the route from road to bell tower.";
   }
 
@@ -685,7 +687,12 @@ export async function createGame(root: HTMLElement) {
       setInventoryOpen(false);
     }
 
-    if (!isMainMenuOpen && player.isDead && frameInput.wasPressed("restart")) {
+    const usedJumpForRestart =
+      !isMainMenuOpen &&
+      player.isDead &&
+      (frameInput.wasPressed("restart") || frameInput.wasPressed("jump"));
+
+    if (usedJumpForRestart) {
       restartFromCheckpoint();
       showCombatMessage("Checkpoint restored");
     }
@@ -727,9 +734,11 @@ export async function createGame(root: HTMLElement) {
       updateActiveInteraction(deltaSeconds, frameInput);
 
       accumulator = Math.min(maxAccumulatedTime, accumulator + deltaSeconds);
+      let wantsJump = frameInput.wasPressed("jump") && !usedJumpForRestart;
 
       while (accumulator >= fixedStep) {
-        fixedUpdate(fixedStep, frameInput);
+        fixedUpdate(fixedStep, frameInput, wantsJump);
+        wantsJump = false;
         accumulator -= fixedStep;
         elapsed += fixedStep;
       }
@@ -760,6 +769,7 @@ export async function createGame(root: HTMLElement) {
       physics,
     });
     playerView.sync(player, deltaSeconds);
+    mapView.sync(progression.flags);
     enemyView.sync(elapsed);
     pickupView.sync(elapsed);
     environmentPolishView.update(elapsed);

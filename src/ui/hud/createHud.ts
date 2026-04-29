@@ -82,7 +82,7 @@ export function createHud(parent: HTMLElement) {
       <div class="death-card">
         <div class="death-kicker">You Are Down</div>
         <h1 class="death-title">The parish takes another breath.</h1>
-        <p class="death-copy">Press Space to restart from the latest checkpoint.</p>
+        <p class="death-copy">Press Space or Enter to restart from the latest checkpoint.</p>
       </div>
     </section>
     <section class="win-overlay" data-hud-win>
@@ -90,6 +90,9 @@ export function createHud(parent: HTMLElement) {
         <div class="win-kicker">Escape Confirmed</div>
         <h1 class="win-title">The bell goes quiet.</h1>
         <p class="win-copy">The prototype route is complete: explore, loot, fight, defeat The Bellkeeper, and escape.</p>
+        <button class="menu-button menu-button-primary win-menu-button" type="button" data-win-main-menu>
+          Back to Main Menu
+        </button>
       </div>
     </section>
   `;
@@ -114,6 +117,7 @@ export function createHud(parent: HTMLElement) {
   const bossPhase = requireElement(hud, "[data-hud-boss-phase]");
   const bossFill = requireElement(hud, "[data-hud-boss-fill]");
   const win = requireElement(hud, "[data-hud-win]");
+  const winMainMenu = requireElement<HTMLButtonElement>(hud, "[data-win-main-menu]");
 
   function update(state: HudState) {
     objective.textContent = state.objective;
@@ -141,10 +145,12 @@ export function createHud(parent: HTMLElement) {
     setPauseHandlers(handlers: {
       onResume: () => void;
       onMainMenu: () => void;
+      onWinMainMenu: () => void;
       onVolumeChange: (volume: number) => void;
     }) {
       pauseResume.onclick = handlers.onResume;
       pauseMainMenu.onclick = handlers.onMainMenu;
+      winMainMenu.onclick = handlers.onWinMainMenu;
       pauseVolume.oninput = () => handlers.onVolumeChange(Number(pauseVolume.value));
     },
     setVolume(volume: number) {

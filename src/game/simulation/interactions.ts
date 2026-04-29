@@ -155,6 +155,15 @@ export function enforceProgressionLocks(player: PlayerState, progression: Progre
     return "The rusted gate needs a key";
   }
 
+  if (
+    !progression.flags.millCrankTurned &&
+    player.position.z < -27.45 &&
+    Math.abs(player.position.x) < 1.65
+  ) {
+    player.position.z = -27.45;
+    return "The chapel route is blocked by the mill mechanism";
+  }
+
   if (!progression.flags.millCrankTurned && player.position.z < -28.6) {
     player.position.z = -28.6;
     return "The chapel route is blocked by the mill mechanism";

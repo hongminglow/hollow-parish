@@ -4,6 +4,7 @@ export const gameActions = [
   "moveLeft",
   "moveRight",
   "sprint",
+  "jump",
   "aim",
   "shoot",
   "reload",
