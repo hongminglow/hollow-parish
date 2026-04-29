@@ -543,6 +543,34 @@ button {
   line-height: 1.6;
 }
 
+.completion-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.completion-stats span {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid rgba(243, 234, 217, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--hud-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.completion-stats strong {
+  color: var(--hud-text);
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .win-menu-button {
   margin-top: 22px;
 }
@@ -758,5 +786,9 @@ button {
   .inventory-menu {
     place-items: end center;
     padding: 12px;
+  }
+
+  .completion-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

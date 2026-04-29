@@ -7,6 +7,12 @@ type HudState = {
   message: string;
   isDead: boolean;
   hasWon: boolean;
+  stats: {
+    time: string;
+    shotsFired: number;
+    enemiesDefeated: number;
+    pickupsCollected: number;
+  };
   boss: {
     isVisible: boolean;
     label: string;
@@ -90,6 +96,12 @@ export function createHud(parent: HTMLElement) {
         <div class="win-kicker">Escape Confirmed</div>
         <h1 class="win-title">The bell goes quiet.</h1>
         <p class="win-copy">The prototype route is complete: explore, loot, fight, defeat The Bellkeeper, and escape.</p>
+        <div class="completion-stats" aria-label="Completion stats">
+          <span>Time <strong data-win-time></strong></span>
+          <span>Shots <strong data-win-shots></strong></span>
+          <span>Enemies <strong data-win-enemies></strong></span>
+          <span>Loot <strong data-win-pickups></strong></span>
+        </div>
         <button class="menu-button menu-button-primary win-menu-button" type="button" data-win-main-menu>
           Back to Main Menu
         </button>
@@ -117,6 +129,10 @@ export function createHud(parent: HTMLElement) {
   const bossPhase = requireElement(hud, "[data-hud-boss-phase]");
   const bossFill = requireElement(hud, "[data-hud-boss-fill]");
   const win = requireElement(hud, "[data-hud-win]");
+  const winTime = requireElement(hud, "[data-win-time]");
+  const winShots = requireElement(hud, "[data-win-shots]");
+  const winEnemies = requireElement(hud, "[data-win-enemies]");
+  const winPickups = requireElement(hud, "[data-win-pickups]");
   const winMainMenu = requireElement<HTMLButtonElement>(hud, "[data-win-main-menu]");
 
   function update(state: HudState) {
@@ -137,6 +153,10 @@ export function createHud(parent: HTMLElement) {
       0,
       Math.min(100, (state.boss.health / state.boss.maxHealth) * 100),
     )}%`;
+    winTime.textContent = state.stats.time;
+    winShots.textContent = String(state.stats.shotsFired);
+    winEnemies.textContent = String(state.stats.enemiesDefeated);
+    winPickups.textContent = String(state.stats.pickupsCollected);
     win.classList.toggle("is-visible", state.hasWon);
   }
 

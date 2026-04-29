@@ -5,6 +5,9 @@ export function createPlayerView(scene: THREE.Scene) {
   const group = new THREE.Group();
   group.name = "PlayerPlaceholder";
   let animationTime = 0;
+  let shootKickRemaining = 0;
+  let reloadPoseRemaining = 0;
+  let damageFlashRemaining = 0;
 
   const bodyMaterial = new THREE.MeshStandardMaterial({
     color: 0x5f7d72,
@@ -72,8 +75,20 @@ export function createPlayerView(scene: THREE.Scene) {
 
   return {
     group,
+    playShoot() {
+      shootKickRemaining = 0.14;
+    },
+    playReload() {
+      reloadPoseRemaining = 0.72;
+    },
+    playDamage() {
+      damageFlashRemaining = 0.18;
+    },
     sync(player: PlayerState, deltaSeconds = 1 / 60) {
       animationTime += deltaSeconds;
+      shootKickRemaining = Math.max(0, shootKickRemaining - deltaSeconds);
+      reloadPoseRemaining = Math.max(0, reloadPoseRemaining - deltaSeconds);
+      damageFlashRemaining = Math.max(0, damageFlashRemaining - deltaSeconds);
       const walkBob =
         player.movementState === "run"
           ? Math.sin(animationTime * 12) * 0.055
@@ -91,10 +106,12 @@ export function createPlayerView(scene: THREE.Scene) {
 
       group.position.set(player.position.x, player.position.y + walkBob, player.position.z);
       group.rotation.y = player.yaw;
+      bodyMaterial.color.setHex(damageFlashRemaining > 0 ? 0xbd4c32 : 0x5f7d72);
       body.rotation.x = lean;
       head.rotation.x = player.isAiming ? -0.08 : 0;
       shoulder.rotation.x = player.isAiming ? -0.16 : 0;
-      aimMarker.rotation.x = player.isAiming ? -0.05 : 0;
+      aimMarker.rotation.x = player.isAiming ? -0.05 - shootKickRemaining * 2.8 : 0;
+      aimMarker.scale.z = 1 + shootKickRemaining * 3.5;
       aimMarker.visible = player.isAiming;
       const stride =
         player.movementState === "run"
@@ -102,8 +119,17 @@ export function createPlayerView(scene: THREE.Scene) {
           : player.movementState === "walk"
             ? Math.sin(animationTime * 7.5) * 0.28
             : 0;
-      leftArm.rotation.x = player.isAiming ? -0.8 : -stride * 0.55;
-      rightArm.rotation.x = player.isAiming ? -0.92 : stride * 0.55;
+      if (reloadPoseRemaining > 0) {
+        leftArm.rotation.x = -1.18;
+        rightArm.rotation.x = -1.08;
+        leftArm.rotation.z = 0.38;
+        rightArm.rotation.z = -0.32;
+      } else {
+        leftArm.rotation.x = player.isAiming ? -0.8 : -stride * 0.55;
+        rightArm.rotation.x = player.isAiming ? -0.92 - shootKickRemaining * 2.1 : stride * 0.55;
+        leftArm.rotation.z = 0;
+        rightArm.rotation.z = 0;
+      }
       leftLeg.rotation.x = stride;
       rightLeg.rotation.x = -stride;
       leftArm.position.z = player.isAiming ? -0.22 : -0.04;

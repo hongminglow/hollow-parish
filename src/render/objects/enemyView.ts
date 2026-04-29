@@ -11,6 +11,7 @@ type EnemyVisual = {
   leftLeg: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   rightLeg: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   weapon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  healthBack: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   healthFill: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   warning: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 };
@@ -138,7 +139,18 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
   leftLeg.castShadow = true;
   rightLeg.castShadow = true;
   weapon.castShadow = true;
-  group.add(warning, body, head, leftArm, rightArm, leftLeg, rightLeg, weapon, healthBack, healthFill);
+  group.add(
+    warning,
+    body,
+    head,
+    leftArm,
+    rightArm,
+    leftLeg,
+    rightLeg,
+    weapon,
+    healthBack,
+    healthFill,
+  );
 
   return {
     enemy,
@@ -150,13 +162,27 @@ function createEnemyVisual(enemy: EnemyState): EnemyVisual {
     leftLeg,
     rightLeg,
     weapon,
+    healthBack,
     healthFill,
     warning,
   };
 }
 
 function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
-  const { enemy, group, body, head, leftArm, rightArm, leftLeg, rightLeg, weapon, healthFill, warning } = visual;
+  const {
+    enemy,
+    group,
+    body,
+    head,
+    leftArm,
+    rightArm,
+    leftLeg,
+    rightLeg,
+    weapon,
+    healthBack,
+    healthFill,
+    warning,
+  } = visual;
   const healthRatio = enemy.maxHealth > 0 ? enemy.health / enemy.maxHealth : 0;
   const bodyColor = getBodyColor(enemy);
   const movementBob =
@@ -166,9 +192,33 @@ function syncEnemyVisual(visual: EnemyVisual, elapsed: number) {
         ? Math.sin(elapsed * 1.1 + enemy.position.z) * 0.015
         : 0;
 
-  group.visible = !enemy.isDead;
+  group.visible = true;
   group.position.set(enemy.position.x, enemy.position.y + movementBob, enemy.position.z);
-  group.rotation.y += enemy.state === "idle" ? 0.002 : enemy.kind === "boss" ? 0.004 : 0.007;
+  group.rotation.z = enemy.isDead ? -Math.PI / 2 : 0;
+  group.rotation.y += enemy.isDead
+    ? 0
+    : enemy.state === "idle"
+      ? 0.002
+      : enemy.kind === "boss"
+        ? 0.004
+        : 0.007;
+  healthBack.visible = !enemy.isDead;
+  healthFill.visible = !enemy.isDead;
+  warning.visible = false;
+
+  if (enemy.isDead) {
+    body.rotation.x = 0.34;
+    head.rotation.x = -0.18;
+    leftArm.rotation.x = -0.7;
+    rightArm.rotation.x = 0.5;
+    leftLeg.rotation.x = 0.32;
+    rightLeg.rotation.x = -0.28;
+    weapon.visible = false;
+    body.material.color.setHex(0x352d29);
+    head.material.color.setHex(0x4a4036);
+    return;
+  }
+
   body.rotation.x =
     enemy.state === "attackWindup"
       ? -0.18

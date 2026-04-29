@@ -380,7 +380,7 @@ Goal: connect exploration, resource management, gates, and objectives.
 - [x] Add pickup collection event.
 - [x] Prevent duplicate pickup collection.
 - [x] Add pickup text feedback.
-- [ ] Add pickup sound placeholder.
+- [x] Add pickup sound placeholder.
 
 ### Inventory
 
@@ -487,7 +487,7 @@ Goal: add a complete final boss encounter with two phases and a win state.
 - [x] Unlock escape gate after boss death.
 - [x] Add victory interaction.
 - [x] Add win screen.
-- [ ] Add completion stats.
+- [x] Add completion stats.
 
 ### Phase 6 Acceptance
 
@@ -531,16 +531,16 @@ Goal: replace graybox presentation while preserving performance and readability.
 - [x] Add player run.
 - [x] Add player aim idle.
 - [x] Add player aim walk.
-- [ ] Add player shoot.
-- [ ] Add player reload.
-- [ ] Add player damage.
+- [x] Add player shoot.
+- [x] Add player reload.
+- [x] Add player damage.
 - [x] Add player death.
 - [x] Add enemy idle.
 - [x] Add enemy walk.
 - [x] Add enemy attack.
 - [x] Add enemy hit.
 - [x] Add enemy stagger.
-- [ ] Add enemy death.
+- [x] Add enemy death.
 - [x] Add boss animations.
 
 ### Lighting And Atmosphere
@@ -554,18 +554,18 @@ Goal: replace graybox presentation while preserving performance and readability.
 
 ### Audio
 
-- [ ] Add footsteps.
+- [x] Add footsteps.
 - [x] Add gunshot.
 - [x] Add reload.
-- [ ] Add enemy growls.
+- [x] Add enemy growls.
 - [x] Add enemy hit.
-- [ ] Add enemy death.
+- [x] Add enemy death.
 - [x] Add pickup sound.
 - [x] Add gate unlock sound.
-- [ ] Add ambient wind.
-- [ ] Add distant bell.
+- [x] Add ambient wind.
+- [x] Add distant bell.
 - [x] Add boss roar.
-- [ ] Add boss music placeholder.
+- [x] Add boss music placeholder.
 
 ### UI Polish
 
@@ -582,8 +582,8 @@ Goal: replace graybox presentation while preserving performance and readability.
 
 - [ ] Game still completes from start to finish.
 - [ ] Visuals match low-poly gothic rural horror direction.
-- [ ] Audio feedback supports combat and pickups.
-- [ ] UI is readable and does not block aiming.
+- [x] Audio feedback supports combat and pickups.
+- [x] UI is readable and does not block aiming.
 - [ ] Browser performance remains stable.
 
 ## Phase 8: QA, Balancing, And Release Candidate

@@ -124,6 +124,13 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
   let combatMessageRemaining = 0;
   let isInventoryOpen = false;
   let volume = options.volume;
+  let footstepMeter = 0;
+  let nextEnemyGrowlAt = 0;
+  const runStats = {
+    shotsFired: 0,
+    enemiesDefeated: 0,
+    pickupsCollected: 0,
+  };
   let activeInteraction: {
     id: InteractionId;
     label: string;
@@ -211,6 +218,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
   }
 
   function returnToMainMenu() {
+    audio.stopBossMusic();
     audio.stopAmbience();
 
     if (document.pointerLockElement) {
@@ -244,6 +252,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     const physicsResult = physics.movePlayer(desiredTranslation, deltaSeconds);
 
     syncPlayerPhysics(player, physicsResult);
+    updateFootsteps(deltaSeconds);
     const previousCheckpointId = progression.currentCheckpoint.id;
     updateProgression(progression, player.position);
     setPlayerSpawn(player, progression.currentCheckpoint.position);
@@ -286,17 +295,51 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     for (const event of enemyEvents) {
       if (event.type === "alerted") {
         showCombatMessage(`${event.enemy.label} noticed you`, 0.7);
+        playEnemyGrowl();
       }
 
       if (event.type === "player-hit") {
         showCombatMessage(`${event.enemy.label} hit you for ${event.damage}`);
         audio.damage();
+        playerView.playDamage();
       }
 
       if (event.type === "attack-start") {
         showCombatMessage(`${event.enemy.label} attacks`, 0.55);
+        playEnemyGrowl();
       }
     }
+  }
+
+  function updateFootsteps(deltaSeconds: number) {
+    const isMoving =
+      !player.isDead &&
+      player.isGrounded &&
+      (player.movementState === "walk" ||
+        player.movementState === "run" ||
+        player.movementState === "aim") &&
+      Math.hypot(player.velocity.x, player.velocity.z) > 0.15;
+
+    if (!isMoving) {
+      footstepMeter = 0;
+      return;
+    }
+
+    footstepMeter += deltaSeconds * (player.movementState === "run" ? 3.2 : 2.05);
+
+    if (footstepMeter >= 1) {
+      footstepMeter %= 1;
+      audio.footstep(player.movementState === "run");
+    }
+  }
+
+  function playEnemyGrowl() {
+    if (elapsed < nextEnemyGrowlAt) {
+      return;
+    }
+
+    nextEnemyGrowlAt = elapsed + 2.8;
+    audio.enemyGrowl();
   }
 
   function skipToZone(index: number) {
@@ -372,6 +415,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
 
       if (result.collected) {
         audio.pickup();
+        runStats.pickupsCollected += 1;
         saveCheckpointSnapshot();
       }
 
@@ -402,6 +446,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     if (result.type === "complete") {
       if (progression.flags.escapeGateUnlocked) {
         showCombatMessage("You escaped the parish", 1.8);
+        audio.stopBossMusic();
         audio.win();
       } else {
         audio.gate();
@@ -517,6 +562,8 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     const wallDistance = physics.castCameraRay(ray.origin, ray.direction, weapon.config.range);
     const result = resolveHitscanShot(weapon, enemies, ray, wallDistance);
     alertEnemiesToNoise(enemies, player.position, weapon.config.range * 0.65);
+    runStats.shotsFired += 1;
+    playerView.playShoot();
     audio.shot();
 
     combatFeedback.spawnMuzzleFlash(ray.origin, ray.direction);
@@ -529,6 +576,10 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     if (result.type === "hit") {
       combatFeedback.spawnHit(result.hitPoint, result.hitPart === "head" ? 0xfff1c4 : 0xd45c3f);
       audio.hit();
+      if (result.enemy.isDead) {
+        runStats.enemiesDefeated += 1;
+        audio.enemyDeath();
+      }
       showCombatMessage(
         result.enemy.isDead
           ? `${result.enemy.label} down`
@@ -550,6 +601,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     for (const event of events) {
       if (event.type === "started") {
         showCombatMessage("The Bellkeeper rises", 1.35);
+        audio.startBossMusic();
         audio.boss();
       }
 
@@ -587,6 +639,7 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
       if (event.type === "defeated") {
         progression.flags.bossDefeated = true;
         showCombatMessage("The Bellkeeper is down. Find the escape gate.", 1.6);
+        audio.stopBossMusic();
         audio.boss();
         saveCheckpointSnapshot();
       }
@@ -676,8 +729,15 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     }
 
     if (!isGameBlocked && !player.isDead && frameInput.wasPressed("reload")) {
-      showCombatMessage(tryStartReload(weapon) ? "Reloading" : "Cannot reload");
-      audio.reload();
+      const startedReload = tryStartReload(weapon);
+      showCombatMessage(startedReload ? "Reloading" : "Cannot reload");
+
+      if (startedReload) {
+        playerView.playReload();
+        audio.reload();
+      } else {
+        audio.ui();
+      }
     }
 
     if (player.position.y < -6) {
@@ -711,6 +771,12 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
       message: combatMessage,
       isDead: player.isDead,
       hasWon,
+      stats: {
+        time: formatElapsedTime(elapsed),
+        shotsFired: runStats.shotsFired,
+        enemiesDefeated: runStats.enemiesDefeated,
+        pickupsCollected: runStats.pickupsCollected,
+      },
       boss: getBossHudState(bossEncounter, enemies),
     });
     hud.setReticleVisible(player.isAiming && !isInventoryOpen);
@@ -760,6 +826,12 @@ export async function createGame(root: HTMLElement, options: CreateGameOptions) 
     return Object.entries(counts)
       .map(([state, count]) => `${state}:${count}`)
       .join(" ");
+  }
+
+  function formatElapsedTime(totalSeconds: number) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
 
   function dispose() {
